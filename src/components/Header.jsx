@@ -24,18 +24,18 @@ export default function Header({
           <h2 className="text-base md:text-xl font-black tracking-tight text-slate-900 leading-tight">
             Welcome Back!
           </h2>
-          <div className="text-[10px] text-slate-400 font-medium hidden sm:block">Safe Drive Admin Panel</div>
+          <div className="text-[10px] text-[#1D56A5] font-bold hidden sm:block">Safe Drive Admin Panel</div>
         </div>
       </div>
 
-      {/* Profile Badge (Matching screenshot "AD Admin Panel") */}
+      {/* Profile Badge (Matching brand palette) */}
       <div className="flex items-center space-x-3">
-        <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shadow-md shadow-indigo-600/20 flex-shrink-0">
+        <div className="w-9 h-9 rounded-full bg-[#1D56A5] text-white font-black text-xs flex items-center justify-center shadow-md shadow-[#1D56A5]/25 flex-shrink-0">
           AD
         </div>
         <div className="hidden sm:block text-left">
           <div className="text-xs font-bold text-slate-900 leading-tight">Admin</div>
-          <div className="text-[10px] text-slate-400 font-medium">Panel</div>
+          <div className="text-[10px] text-[#E94E1A] font-bold">Panel</div>
         </div>
         <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
       </div>

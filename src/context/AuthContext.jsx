@@ -3,6 +3,8 @@ import axios from 'axios';
 
 const AuthContext = createContext();
 export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+export const USER_WEB_URL = import.meta.env.VITE_USER_WEB_URL || 'http://localhost:5173';
+export const PUBLIC_SCAN_BASE = import.meta.env.VITE_PUBLIC_SCAN_BASE_URL || `${USER_WEB_URL}/q`;
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem('safe_drive_admin_token') || '');
