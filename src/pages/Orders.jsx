@@ -342,13 +342,23 @@ export default function Orders() {
                       </span>
                     </td>
 
-                    {/* QR Claim Status */}
+                    {/* QR Allotment Status */}
                     <td className="py-3.5 px-4">
-                      {o.isClaimed ? (
+                      {o.productType === 'DIGITAL' ? (
+                        <div>
+                          <span className="inline-flex items-center space-x-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                            <CheckCircle2 className="w-3 h-3 text-indigo-600" />
+                            <span>Allotted ({o.claimedProductId || 'SD Digital Pass'})</span>
+                          </span>
+                          <div className="text-[9px] text-slate-400 mt-0.5">
+                            Digital E-Pass Auto-Issued
+                          </div>
+                        </div>
+                      ) : o.isClaimed ? (
                         <div>
                           <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                            <span>Claimed ({o.claimedProductId || 'SD Kit'})</span>
+                            <span>Registered ({o.claimedProductId || 'SD Kit'})</span>
                           </span>
                           {o.claimedAt && (
                             <div className="text-[9px] text-slate-400 mt-0.5">
@@ -359,7 +369,7 @@ export default function Orders() {
                       ) : (
                         <span className="inline-flex items-center space-x-1 bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
                           <Clock className="w-3 h-3 text-slate-400" />
-                          <span>Pending First Scan</span>
+                          <span>Pending Delivery & Scan</span>
                         </span>
                       )}
                     </td>
