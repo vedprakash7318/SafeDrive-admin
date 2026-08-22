@@ -23,9 +23,7 @@ import {
   FileText,
   DollarSign
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+import { useAuth, API_BASE } from '../context/AuthContext';
 
 export default function Orders() {
   const { token } = useAuth();

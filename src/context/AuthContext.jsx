@@ -2,8 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext();
-export const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-export const USER_WEB_URL = import.meta.env.VITE_USER_WEB_URL || 'http://localhost:5173';
+export const API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' && window.location.origin.includes('localhost') ? 'http://localhost:5000/api' : '/api');
+export const USER_WEB_URL = import.meta.env.VITE_USER_WEB_URL || (typeof window !== 'undefined' ? window.location.origin : '');
 export const PUBLIC_SCAN_BASE = import.meta.env.VITE_PUBLIC_SCAN_BASE_URL || `${USER_WEB_URL}/q`;
 
 export const AuthProvider = ({ children }) => {
