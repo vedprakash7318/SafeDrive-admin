@@ -359,27 +359,39 @@ export default function Orders() {
                     {/* QR Allotment Status */}
                     <td className="py-3.5 px-4">
                       {o.productType === 'DIGITAL' ? (
-                        o.isClaimed ? (
-                          <div>
-                            <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                              <span>Registered ({o.claimedProductId || 'SD Digital Pass'})</span>
-                            </span>
-                            <div className="text-[9px] text-slate-400 mt-0.5">
-                              Digital E-Pass Active • {o.claimedAt ? new Date(o.claimedAt).toLocaleDateString() : 'Active'}
+                        (() => {
+                          const allocatedTags = (o.allocatedQRIds && o.allocatedQRIds.length > 0)
+                            ? [...new Set(o.allocatedQRIds.map(q => q?.productId || q))].filter(Boolean)
+                            : (o.claimedProductId ? [o.claimedProductId] : []);
+
+                          const tagsLabel = allocatedTags.length > 0
+                            ? allocatedTags.length <= 4
+                              ? allocatedTags.join(', ')
+                              : `${allocatedTags[0]} to ${allocatedTags[allocatedTags.length - 1]} (${allocatedTags.length} Kits)`
+                            : (o.claimedProductId || 'SD Digital Pass');
+
+                          return o.isClaimed ? (
+                            <div>
+                              <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <span>Registered ({tagsLabel})</span>
+                              </span>
+                              <div className="text-[9px] text-slate-400 mt-0.5">
+                                Digital E-Pass Active • {o.claimedAt ? new Date(o.claimedAt).toLocaleDateString() : 'Active'}
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <div>
-                            <span className="inline-flex items-center space-x-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                              <CheckCircle2 className="w-3 h-3 text-indigo-600" />
-                              <span>Allotted ({o.claimedProductId || 'SD Digital Pass'})</span>
-                            </span>
-                            <div className="text-[9px] text-slate-400 mt-0.5">
-                              Pending User Scan & Activation
+                          ) : (
+                            <div>
+                              <span className="inline-flex items-center space-x-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                                <CheckCircle2 className="w-3 h-3 text-indigo-600" />
+                                <span>Allotted ({tagsLabel})</span>
+                              </span>
+                              <div className="text-[9px] text-slate-400 mt-0.5">
+                                Pending User Scan & Activation
+                              </div>
                             </div>
-                          </div>
-                        )
+                          );
+                        })()
                       ) : o.isClaimed ? (
                         <div>
                           <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md">

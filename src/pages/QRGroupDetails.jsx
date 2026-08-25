@@ -204,14 +204,20 @@ export default function QRGroupDetails() {
           <p className="text-[10px] text-indigo-700 mt-1 font-medium">Physical Printed Stickers</p>
         </div>
 
-        {/* Available In Stock */}
+        {/* Available In Stock / Allotted */}
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between text-slate-400 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Available In Stock</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+              {groupName === 'STORE-DIGITAL' || rawQRs?.[0]?.qrType === 'DIGITAL' ? 'Allotted to Buyers' : 'Available In Stock'}
+            </span>
             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
           </div>
-          <div className="text-2xl font-black text-emerald-600">{stats.inStockKits || 0}</div>
-          <p className="text-[10px] text-emerald-700 mt-1 font-medium">Ready for Assignment</p>
+          <div className="text-2xl font-black text-emerald-600">
+            {groupName === 'STORE-DIGITAL' || rawQRs?.[0]?.qrType === 'DIGITAL' ? (stats.generatedKits || stats.totalKits || 0) : (stats.inStockKits || 0)}
+          </div>
+          <p className="text-[10px] text-emerald-700 mt-1 font-medium">
+            {groupName === 'STORE-DIGITAL' || rawQRs?.[0]?.qrType === 'DIGITAL' ? 'Assigned Digital E-Kits' : 'Ready for Assignment'}
+          </p>
         </div>
 
         {/* Active Registered */}

@@ -362,15 +362,23 @@ export default function QRManagement() {
                         {/* 4. Status Breakdown */}
                         <td className="px-6 py-3.5">
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="bg-blue-50 text-[#1D56A5] border border-[#1D56A5]/20 font-bold text-[10px] px-2 py-0.5 rounded-full">
-                              {g.inStockCount || 0} In Stock
-                            </span>
+                            {g.qrType === 'DIGITAL' || g.groupName?.includes('DIGITAL') || (g.generatedCount > 0 && (g.inStockCount || 0) === 0) ? (
+                              <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                                {g.generatedCount || g.totalSets || 0} Allotted (Digital)
+                              </span>
+                            ) : (
+                              <span className="bg-blue-50 text-[#1D56A5] border border-[#1D56A5]/20 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                                {g.inStockCount || 0} In Stock
+                              </span>
+                            )}
                             <span className="bg-emerald-50 text-[#259A3A] border border-[#259A3A]/20 font-bold text-[10px] px-2 py-0.5 rounded-full">
                               {g.activeCount || 0} Active
                             </span>
-                            <span className="bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] px-2 py-0.5 rounded-full">
-                              {g.soldCount || 0} Sold
-                            </span>
+                            {g.soldCount > 0 && g.qrType !== 'DIGITAL' && (
+                              <span className="bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                                {g.soldCount} Sold
+                              </span>
+                            )}
                             {g.suspendedCount > 0 && (
                               <span className="bg-red-50 text-[#E94E1A] border border-[#E94E1A]/20 font-bold text-[10px] px-2 py-0.5 rounded-full">
                                 {g.suspendedCount} Suspended
