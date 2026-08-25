@@ -194,6 +194,7 @@ export default function ScanLogs() {
                   <th className="py-3.5 px-3.5 text-center w-12">#</th>
                   <th className="py-3.5 px-4">Timestamp</th>
                   <th className="py-3.5 px-4">Event Type</th>
+                  <th className="py-3.5 px-4">Caller / Scanner Phone</th>
                   <th className="py-3.5 px-4">QR Sticker / Kit</th>
                   <th className="py-3.5 px-4">Asset Tag / Plate</th>
                   <th className="py-3.5 px-4">Registered Owner</th>
@@ -226,6 +227,25 @@ export default function ScanLogs() {
                         <div className="text-[10px] text-slate-500 font-mono mt-1 max-w-xs truncate">
                           {log.notes}
                         </div>
+                      )}
+                    </td>
+
+                    {/* Caller / Scanner Phone */}
+                    <td className="py-3.5 px-4 font-mono">
+                      {log.callerPhone || log.scannerPhone ? (
+                        <div>
+                          <div className="inline-flex items-center space-x-1 bg-amber-50 border border-amber-200 text-amber-900 px-2 py-0.5 rounded-lg text-xs font-bold font-mono">
+                            <Phone className="w-3 h-3 text-amber-600" />
+                            <span>+91 {log.callerPhone || log.scannerPhone}</span>
+                          </div>
+                          {log.reason && (
+                            <div className="text-[10px] text-slate-600 font-medium mt-0.5">
+                              📌 {log.reason}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic text-[11px]">Visitor Scan</span>
                       )}
                     </td>
 

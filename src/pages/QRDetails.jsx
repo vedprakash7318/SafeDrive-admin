@@ -43,10 +43,61 @@ export default function QRDetails() {
   const [error, setError] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Manual Renewal Modal / Form State
-  const [renewing, setRenewing] = useState(false);
-  const [renewForm, setRenewForm] = useState({ validityDays: 365, bonusCalls: 10, bonusMessages: 20 });
-  const [renewSuccess, setRenewSuccess] = useState('');
+  // Master Edit Modal State
+  const [showMasterEditModal, setShowMasterEditModal] = useState(false);
+  const [savingMaster, setSavingMaster] = useState(false);
+  const [editForm, setEditForm] = useState({
+    renewalAmount: 199,
+    status: 'ACTIVE',
+    qrFor: 'Car',
+    qrType: 'PHYSICAL',
+    validityDays: 365,
+    expiryDate: '',
+    initialCalls: 10,
+    initialMessages: 20,
+    vehicleBrand: '',
+    vehicleName: '',
+    vehicleNumber: '',
+    emergencyContacts: [{ name: '', number: '', relation: 'Family' }]
+  });
+
+  const openMasterEdit = () => {
+    if (!qr) return;
+    const v = qr.vehicleId;
+    setEditForm({
+      renewalAmount: qr.renewalAmount || 199,
+      status: qr.status || 'ACTIVE',
+      qrFor: qr.qrFor || 'Car',
+      qrType: qr.qrType || 'PHYSICAL',
+      validityDays: qr.validityDays || 365,
+      expiryDate: qr.expiryDate ? new Date(qr.expiryDate).toISOString().slice(0, 10) : '',
+      initialCalls: qr.initialCalls || 10,
+      initialMessages: qr.initialMessages || 20,
+      vehicleBrand: v?.vehicleBrand || '',
+      vehicleName: v?.vehicleName || '',
+      vehicleNumber: v?.vehicleNumber || '',
+      emergencyContacts: v?.emergencyContacts && v.emergencyContacts.length > 0
+        ? v.emergencyContacts.map(c => ({ name: c.name || '', number: c.number || '', relation: c.relation || 'Emergency Contact' }))
+        : [{ name: '', number: '', relation: 'Family' }, { name: '', number: '', relation: 'Emergency' }]
+    });
+    setShowMasterEditModal(true);
+  };
+
+  const handleSaveMasterEdit = async (e) => {
+    e.preventDefault();
+    setSavingMaster(true);
+    try {
+      const res = await axios.put(`${API_BASE}/admin/qr/${qr._id}/details`, editForm, authHeader);
+      if (res.data.success) {
+        setShowMasterEditModal(false);
+        fetchQR();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update details');
+    } finally {
+      setSavingMaster(false);
+    }
+  };
 
   const fetchQR = async () => {
     setLoading(true);
@@ -82,26 +133,6 @@ export default function QRDetails() {
       }
     } catch (err) {
       alert(err.response?.data?.message || 'Error updating status');
-    }
-  };
-
-  // Handle Manual Renewal
-  const handleRenewSubmit = async (e) => {
-    e.preventDefault();
-    if (!qr) return;
-    setRenewing(true);
-    setRenewSuccess('');
-    try {
-      const res = await axios.post(`${API_BASE}/admin/qr/${qr._id}/renew`, renewForm, authHeader);
-      if (res.data.success) {
-        setRenewSuccess(res.data.message);
-        fetchQR();
-        setTimeout(() => setRenewSuccess(''), 3000);
-      }
-    } catch (err) {
-      alert(err.response?.data?.message || 'Failed to renew QR');
-    } finally {
-      setRenewing(false);
     }
   };
 
@@ -149,9 +180,9 @@ export default function QRDetails() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center space-x-3">
           <button
-            onClick={() => navigate('/qr')}
+            onClick={() => navigate(-1)}
             className="p-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl shadow-2xs transition"
-            title="Back to Inventory"
+            title="Go Back"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
@@ -202,6 +233,13 @@ export default function QRDetails() {
 
         {/* Top Right Action Buttons */}
         <div className="flex items-center space-x-2.5">
+          <button
+            onClick={openMasterEdit}
+            className="flex items-center space-x-1.5 bg-[#1D56A5] hover:bg-[#164382] text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-2xs transition"
+          >
+            <span>✏️ Master Edit Details</span>
+          </button>
+
           <button
             onClick={() => window.print()}
             className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-xl text-xs font-bold shadow-2xs transition"
@@ -346,6 +384,23 @@ export default function QRDetails() {
                   </div>
                 </div>
 
+                {/* Activated By Details */}
+                {(qr.activatedByName || qr.activatedByPhone || qr.activationPhone) && (
+                  <div className="p-3.5 bg-blue-50/70 border border-[#1D56A5]/25 rounded-2xl flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-base">👤</span>
+                      <div>
+                        <div className="text-[10px] uppercase font-bold text-slate-400">Activated By (Recipient)</div>
+                        <strong className="text-slate-900">{qr.activatedByName || 'Kit Recipient'}</strong>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-[10px] uppercase font-bold text-slate-400">Activation Mobile</div>
+                      <span className="font-mono font-bold text-[#1D56A5]">{qr.activatedByPhone || qr.activationPhone}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Emergency Contacts if registered */}
                 {vehicle?.emergencyContacts && vehicle.emergencyContacts.length > 0 && (
                   <div className="pt-2">
@@ -420,66 +475,7 @@ export default function QRDetails() {
             </div>
           </div>
 
-          {/* 3. ADMIN MANUAL RENEWAL & TOP-UP */}
-          {isAssigned && (
-            <div className="bg-white border border-slate-200/90 rounded-3xl p-6 shadow-xs">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center space-x-2">
-                <RefreshCw className="w-4 h-4 text-[#1D56A5]" />
-                <span>Admin Manual Renewal & Extension</span>
-              </h2>
-              <p className="text-xs text-slate-500 mb-4">
-                Extend validity and add bonus call/SMS quota. Unused balance will be preserved.
-              </p>
 
-              {renewSuccess && (
-                <div className="mb-4 p-3 bg-emerald-50 border border-[#259A3A]/30 rounded-xl text-[#259A3A] text-xs font-bold flex items-center space-x-2">
-                  <CheckCircle2 className="w-4 h-4 text-[#259A3A] flex-shrink-0" />
-                  <span>{renewSuccess}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleRenewSubmit} className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Add Validity (Days)</label>
-                    <input
-                      type="number"
-                      value={renewForm.validityDays}
-                      onChange={(e) => setRenewForm({ ...renewForm, validityDays: parseInt(e.target.value) })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Bonus Calls</label>
-                    <input
-                      type="number"
-                      value={renewForm.bonusCalls}
-                      onChange={(e) => setRenewForm({ ...renewForm, bonusCalls: parseInt(e.target.value) })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Bonus SMS</label>
-                    <input
-                      type="number"
-                      value={renewForm.bonusMessages}
-                      onChange={(e) => setRenewForm({ ...renewForm, bonusMessages: parseInt(e.target.value) })}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={renewing}
-                  className="bg-[#1D56A5] hover:bg-[#164382] text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-md shadow-[#1D56A5]/20 transition flex items-center space-x-2"
-                >
-                  {renewing ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <span>Apply Renewal Extension</span>}
-                </button>
-              </form>
-            </div>
-          )}
 
           {/* 4. QUOTA LEDGER & ADD-ON TOP-UP HISTORY */}
           {isAssigned && (
@@ -579,6 +575,255 @@ export default function QRDetails() {
 
         </div>
       </div>
+
+      {/* MASTER EDIT MODAL */}
+      {showMasterEditModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-2xl w-full shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#1D56A5] flex items-center justify-center font-bold text-sm">
+                  ✏️
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-slate-900">Admin Master Edit: {qr.productId}</h3>
+                  <p className="text-[11px] text-slate-500">Update renewal price, category, validity, quotas, and vehicle details</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMasterEditModal(false)}
+                className="p-2 hover:bg-slate-100 text-slate-400 rounded-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveMasterEdit} className="space-y-4">
+              {/* Product Kit Status & Renewal Price */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Annual Renewal Price (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={editForm.renewalAmount}
+                    onChange={(e) => setEditForm({ ...editForm, renewalAmount: e.target.value })}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold text-[#1D56A5] font-mono"
+                    placeholder="199"
+                  />
+                  <span className="text-[10px] text-slate-500 mt-1 block">Customer will pay this fee on renewal</span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Kit Status *
+                  </label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                  >
+                    <option value="ACTIVE">ACTIVE (Active Protection)</option>
+                    <option value="IN STOCK">IN STOCK (Unassigned)</option>
+                    <option value="SOLD">SOLD (Claimed / Ready to Activate)</option>
+                    <option value="EXPIRED">EXPIRED (Needs Renewal)</option>
+                    <option value="SUSPENDED">SUSPENDED (Blocked by Admin)</option>
+                    <option value="CANCELLED">CANCELLED</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Category & Format */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Dynamic Category (qrFor) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editForm.qrFor}
+                    onChange={(e) => setEditForm({ ...editForm, qrFor: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                    placeholder="e.g. Car, Bike, Scooter, Luggage, Laptop Bag"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Format (Physical vs Digital)
+                  </label>
+                  <select
+                    value={editForm.qrType}
+                    onChange={(e) => setEditForm({ ...editForm, qrType: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                  >
+                    <option value="PHYSICAL">PHYSICAL (Printed Stickers)</option>
+                    <option value="DIGITAL">DIGITAL (E-Pass)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Validity & Expiry Override */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Validity Duration (Days)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={editForm.validityDays}
+                    onChange={(e) => setEditForm({ ...editForm, validityDays: e.target.value })}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Expiry Date Override
+                  </label>
+                  <input
+                    type="date"
+                    value={editForm.expiryDate}
+                    onChange={(e) => setEditForm({ ...editForm, expiryDate: e.target.value })}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* Vehicle Master Edit */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3">
+                <div className="font-black text-xs text-slate-900 uppercase tracking-wider">
+                  🚗 Vehicle / Asset Information
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Brand / Make</label>
+                    <input
+                      type="text"
+                      value={editForm.vehicleBrand}
+                      onChange={(e) => setEditForm({ ...editForm, vehicleBrand: e.target.value })}
+                      placeholder="e.g. Hyundai, Honda, Apple"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Model / Name</label>
+                    <input
+                      type="text"
+                      value={editForm.vehicleName}
+                      onChange={(e) => setEditForm({ ...editForm, vehicleName: e.target.value })}
+                      placeholder="e.g. Creta, Activa, Bag"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 uppercase mb-1">Plate / Tag ID</label>
+                    <input
+                      type="text"
+                      value={editForm.vehicleNumber}
+                      onChange={(e) => setEditForm({ ...editForm, vehicleNumber: e.target.value.toUpperCase() })}
+                      placeholder="e.g. UP32AB1234"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-[#1D56A5] font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Emergency Contacts */}
+                <div className="pt-2 border-t border-slate-200/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-slate-700">Emergency Contacts</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditForm({
+                        ...editForm,
+                        emergencyContacts: [...editForm.emergencyContacts, { name: '', number: '', relation: 'Family' }]
+                      })}
+                      className="text-[10px] font-bold text-[#1D56A5] hover:underline"
+                    >
+                      + Add Contact
+                    </button>
+                  </div>
+                  {editForm.emergencyContacts.map((c, idx) => (
+                    <div key={idx} className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <input
+                        type="text"
+                        placeholder="Contact Name"
+                        value={c.name}
+                        onChange={(e) => {
+                          const updated = [...editForm.emergencyContacts];
+                          updated[idx].name = e.target.value;
+                          setEditForm({ ...editForm, emergencyContacts: updated });
+                        }}
+                        className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs"
+                      />
+                      <input
+                        type="text"
+                        placeholder="Phone Number"
+                        value={c.number}
+                        onChange={(e) => {
+                          const updated = [...editForm.emergencyContacts];
+                          updated[idx].number = e.target.value;
+                          setEditForm({ ...editForm, emergencyContacts: updated });
+                        }}
+                        className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono"
+                      />
+                      <div className="flex items-center space-x-1">
+                        <input
+                          type="text"
+                          placeholder="Relation"
+                          value={c.relation}
+                          onChange={(e) => {
+                            const updated = [...editForm.emergencyContacts];
+                            updated[idx].relation = e.target.value;
+                            setEditForm({ ...editForm, emergencyContacts: updated });
+                          }}
+                          className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs"
+                        />
+                        {editForm.emergencyContacts.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = editForm.emergencyContacts.filter((_, i) => i !== idx);
+                              setEditForm({ ...editForm, emergencyContacts: updated });
+                            }}
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowMasterEditModal(false)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingMaster}
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#1D56A5] hover:bg-[#164382] rounded-xl shadow-md transition disabled:opacity-50 flex items-center space-x-1.5"
+                >
+                  {savingMaster ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <span>💾 Save Master Changes</span>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

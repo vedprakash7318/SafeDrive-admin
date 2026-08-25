@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link } from 'react-router-dom';
-import { ShieldCheck, RefreshCw, Search, ExternalLink, User, Phone, Car, Tag, Sparkles } from 'lucide-react';
+import { ShieldCheck, RefreshCw, Search, ExternalLink, User, Phone, Car, Tag, Sparkles, Eye } from 'lucide-react';
 import { useAuth, API_BASE, PUBLIC_SCAN_BASE } from '../context/AuthContext';
 
 export default function Vehicles() {
@@ -173,8 +173,8 @@ export default function Vehicles() {
                         {v.userId ? (
                           <div>
                             <Link
-                              to={`/users/${v.userId._id}`}
-                              className="font-bold text-slate-900 hover:text-[#1D56A5] hover:underline"
+                              to={`/qr-users/${v.userId._id}`}
+                              className="font-bold text-slate-900 hover:text-[#259A3A] hover:underline"
                             >
                               {v.userId.name}
                             </Link>
@@ -207,16 +207,15 @@ export default function Vehicles() {
                       {/* Actions */}
                       <td className="py-4 px-4 text-right">
                         <div className="flex items-center justify-end space-x-1.5">
-                          {v.userId && (
-                            <Link
-                              to={`/users/${v.userId._id}`}
-                              className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
-                              title="View Owner Details"
-                            >
-                              <User className="w-3 h-3 text-[#1D56A5]" />
-                              <span>Owner</span>
-                            </Link>
-                          )}
+                          <Link
+                            to={`/qr-users/${v.userId?._id || productId || v._id}`}
+                            className="bg-emerald-50 hover:bg-emerald-100 text-[#259A3A] text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition inline-flex items-center space-x-1 border border-emerald-200"
+                            title="View Vehicle & QR Details"
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>View</span>
+                          </Link>
+
                           {primaryQR && (
                             <a
                               href={`${PUBLIC_SCAN_BASE}/${primaryQR.publicToken}`}

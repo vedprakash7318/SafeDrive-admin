@@ -207,9 +207,16 @@ export default function Users() {
 
                     {/* 2. QR Sets Bought */}
                     <td className="px-6 py-3.5">
-                      <span className="bg-[#E9DFEE] text-[#1D56A5] font-mono font-bold text-xs px-2.5 py-1 rounded-lg">
-                        📦 {u.totalQRsBought || u.qrs?.length || 0} Stickers
-                      </span>
+                      <div className="flex items-center space-x-1.5">
+                        <span className="bg-[#E9DFEE] text-[#1D56A5] font-mono font-bold text-xs px-2.5 py-1 rounded-lg">
+                          📦 {u.totalQRsBought || u.qrs?.length || 0} Kits
+                        </span>
+                        {u.digitalQRsCount > 0 && (
+                          <span className="bg-indigo-50 text-indigo-700 font-mono font-bold text-[10px] px-2 py-0.5 rounded border border-indigo-200">
+                            💻 {u.digitalQRsCount} Digital
+                          </span>
+                        )}
+                      </div>
                     </td>
 
                     {/* 3. Status Breakdown */}
@@ -218,9 +225,11 @@ export default function Users() {
                         <span className="bg-emerald-50 text-[#259A3A] font-bold text-[10px] px-2 py-0.5 rounded-full border border-[#259A3A]/20">
                           {u.activeQRsCount || 0} Active
                         </span>
-                        <span className="bg-amber-50 text-amber-700 font-bold text-[10px] px-2 py-0.5 rounded-full border border-amber-200">
-                          {u.soldQRsCount || 0} Ready (Sold)
-                        </span>
+                        {u.soldQRsCount > 0 && (
+                          <span className="bg-amber-50 text-amber-700 font-bold text-[10px] px-2 py-0.5 rounded-full border border-amber-200">
+                            {u.soldQRsCount} Pending Scan
+                          </span>
+                        )}
                       </div>
                     </td>
 

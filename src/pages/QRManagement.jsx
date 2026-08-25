@@ -47,8 +47,6 @@ export default function QRManagement() {
   const [customGroupName, setCustomGroupName] = useState('');
   const [qrTypes, setQrTypes] = useState([]);
   const [selectedQRType, setSelectedQRType] = useState('');
-  const [qrFormats, setQrFormats] = useState([]);
-  const [selectedQRFormatId, setSelectedQRFormatId] = useState('');
   const [selectedQRFormat, setSelectedQRFormat] = useState('PHYSICAL');
   const [nextSeq, setNextSeq] = useState({ nextNumber: 1, formattedCode: 'SD001' });
   const [batchQuantity, setBatchQuantity] = useState(10);
@@ -89,22 +87,6 @@ export default function QRManagement() {
         setQrTypes(res.data.types);
         if (res.data.types.length > 0 && !selectedQRType) {
           setSelectedQRType(res.data.types[0].name);
-        }
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const fetchQRFormats = async () => {
-    try {
-      const res = await axios.get(`${API_BASE}/admin/qr-formats`, authHeader);
-      if (res.data.success) {
-        const list = res.data.formats || [];
-        setQrFormats(list);
-        if (list.length > 0) {
-          setSelectedQRFormatId((prev) => prev || list[0]._id);
-          setSelectedQRFormat((prev) => prev || list[0].name);
         }
       }
     } catch (err) {
@@ -160,7 +142,6 @@ export default function QRManagement() {
     fetchQRs();
     fetchTags();
     fetchQRTypes();
-    fetchQRFormats();
     fetchNextSeq();
   };
 
@@ -168,7 +149,7 @@ export default function QRManagement() {
     refreshAll();
   }, [qrFilter, qrTagFilter]);
 
-  // Handle Generate QR Batch (Only: QR For + Quantity + Group)
+  // Handle Generate QR Batch (Only: QR For + Quantity + Group + Type: PHYSICAL / DIGITAL)
   const handleGenerateBatch = async (e) => {
     e.preventDefault();
     setGeneratingBatch(true);
@@ -176,7 +157,6 @@ export default function QRManagement() {
 
     const targetGroupName = (customGroupName || 'DEFAULT-BATCH').trim().toUpperCase();
     const chosenTypeObj = qrTypes.find((t) => t.name === selectedQRType);
-    const chosenFormatObj = qrFormats.find((f) => f._id === selectedQRFormatId || f.name === selectedQRFormat);
 
     try {
       const payload = {
@@ -184,8 +164,7 @@ export default function QRManagement() {
         tag: targetGroupName,
         qrFor: selectedQRType || 'Car',
         qrTypeId: chosenTypeObj?._id,
-        qrFormatId: chosenFormatObj?._id || null,
-        qrType: chosenFormatObj?.type || (selectedQRFormat === 'DIGITAL' ? 'DIGITAL' : 'PHYSICAL')
+        qrType: selectedQRFormat === 'DIGITAL' ? 'DIGITAL' : 'PHYSICAL'
       };
       const res = await axios.post(`${API_BASE}/admin/qr/generate`, payload, authHeader);
       if (res.data.success) {
@@ -639,83 +618,53 @@ export default function QRManagement() {
                 </select>
               </div>
 
-              {/* 1.5 QR Type (From Settings) */}
+              {/* 1.5 QR Type (Fixed: PHYSICAL / DIGITAL) */}
               <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
-                    QR Type *
-                  </label>
-                  <Link to="/settings/qr-formats" className="text-[10px] text-[#1D56A5] hover:underline font-bold">
-                    + Manage QR Types
-                  </Link>
-                </div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  QR Type *
+                </label>
 
-                {qrFormats.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                    {qrFormats.map((fmt) => {
-                      const isSelected = selectedQRFormatId === fmt._id || selectedQRFormat === fmt.name;
-                      const isDigital = (fmt.type || '').toUpperCase() === 'DIGITAL';
-                      return (
-                        <button
-                          key={fmt._id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedQRFormatId(fmt._id);
-                            setSelectedQRFormat(fmt.name);
-                          }}
-                          className={`p-3 rounded-xl border text-left transition flex items-start space-x-2.5 ${
-                            isSelected
-                              ? isDigital
-                                ? 'bg-indigo-50 border-indigo-400 text-indigo-900 ring-2 ring-indigo-400/20'
-                                : 'bg-amber-50 border-amber-400 text-amber-900 ring-2 ring-amber-400/20'
-                              : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                          }`}
-                        >
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 shrink-0 ${
-                            isSelected
-                              ? isDigital ? 'border-indigo-600 bg-indigo-600' : 'border-amber-600 bg-amber-600'
-                              : 'border-slate-300'
-                          }`}>
-                            {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
-                          </div>
-                          <div>
-                            <div className="font-bold text-xs">{fmt.name}</div>
-                            <div className="text-[10px] text-slate-400 mt-0.5">
-                              {isDigital ? '💻 DIGITAL' : '📦 PHYSICAL'}
-                            </div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedQRFormat('PHYSICAL')}
-                      className={`p-3 rounded-xl border text-left transition flex items-center space-x-2.5 ${
-                        selectedQRFormat === 'PHYSICAL'
-                          ? 'bg-amber-50 border-amber-300 text-amber-900 shadow-2xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedQRFormat('PHYSICAL')}
+                    className={`p-3.5 rounded-2xl border text-left transition flex items-center space-x-3 ${
+                      selectedQRFormat === 'PHYSICAL'
+                        ? 'bg-amber-50/80 border-amber-400 text-amber-950 ring-2 ring-amber-400/20 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      selectedQRFormat === 'PHYSICAL' ? 'border-amber-600 bg-amber-600' : 'border-slate-300'
+                    }`}>
+                      {selectedQRFormat === 'PHYSICAL' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div>
                       <div className="font-bold text-xs">📦 PHYSICAL</div>
-                      <div className="text-[10px] text-slate-400">Printed Stickers</div>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedQRFormat('DIGITAL')}
-                      className={`p-3 rounded-xl border text-left transition flex items-center space-x-2.5 ${
-                        selectedQRFormat === 'DIGITAL'
-                          ? 'bg-indigo-50 border-indigo-300 text-indigo-900 shadow-2xs'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                      }`}
-                    >
+                      <div className="text-[10px] text-slate-500">Printed Stickers (Scan to assign)</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedQRFormat('DIGITAL')}
+                    className={`p-3.5 rounded-2xl border text-left transition flex items-center space-x-3 ${
+                      selectedQRFormat === 'DIGITAL'
+                        ? 'bg-indigo-50/80 border-indigo-400 text-indigo-950 ring-2 ring-indigo-400/20 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                      selectedQRFormat === 'DIGITAL' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
+                    }`}>
+                      {selectedQRFormat === 'DIGITAL' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                    <div>
                       <div className="font-bold text-xs">💻 DIGITAL</div>
-                      <div className="text-[10px] text-slate-400">E-QR Pass</div>
-                    </button>
-                  </div>
-                )}
+                      <div className="text-[10px] text-slate-500">E-QR Digital Pass</div>
+                    </div>
+                  </button>
+                </div>
               </div>
 
               {/* 2. QR Group / Batch Tag */}

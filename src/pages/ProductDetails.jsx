@@ -225,6 +225,7 @@ export default function ProductDetails() {
               <tr>
                 <th className="px-5 py-3.5">Order No</th>
                 <th className="px-5 py-3.5">Customer</th>
+                <th className="px-5 py-3.5">Qty Ordered</th>
                 <th className="px-5 py-3.5">Amount</th>
                 <th className="px-5 py-3.5">Payment ID</th>
                 <th className="px-5 py-3.5">Delivery Status</th>
@@ -234,7 +235,7 @@ export default function ProductDetails() {
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-5 py-12 text-center text-slate-400 text-xs">
+                  <td colSpan="7" className="px-5 py-12 text-center text-slate-400 text-xs">
                     No orders placed for this product yet.
                   </td>
                 </tr>
@@ -246,7 +247,12 @@ export default function ProductDetails() {
                       <div className="font-bold text-slate-900">{o.customerName || o.userId?.name || 'Customer'}</div>
                       <div className="text-[11px] text-slate-500">{o.customerPhone || o.userId?.phone}</div>
                     </td>
-                    <td className="px-5 py-3.5 font-bold text-slate-900">₹{o.totalAmount || productData.price}</td>
+                    <td className="px-5 py-3.5">
+                      <span className="font-bold font-mono text-xs bg-slate-100 text-slate-900 px-2 py-0.5 rounded-lg border border-slate-200">
+                        {o.quantity || 1} {o.quantity === 1 ? 'Kit' : 'Kits'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 font-bold text-slate-900">₹{o.totalAmount || o.amount || productData.price}</td>
                     <td className="px-5 py-3.5 font-mono text-slate-600 text-[11px]">{o.paymentId || 'Simulated'}</td>
                     <td className="px-5 py-3.5">
                       <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${

@@ -15,6 +15,8 @@ import ScanReasons from './pages/ScanReasons';
 import ExtraPricing from './pages/ExtraPricing';
 import Users from './pages/Users';
 import UserDetails from './pages/UserDetails';
+import QRUsers from './pages/QRUsers';
+import QRUserDetails from './pages/QRUserDetails';
 import Vehicles from './pages/Vehicles';
 import Alerts from './pages/Alerts';
 import ScanLogs from './pages/ScanLogs';
@@ -68,12 +70,14 @@ function AuthenticatedApp() {
             <Route path="/products/:id" element={<ProductDetails />} />
             <Route path="/packages" element={<ExtraPricing />} />
             <Route path="/settings/qr-types" element={<QRTypes />} />
-            <Route path="/settings/qr-formats" element={<QRFormats />} />
+            <Route path="/settings/qr-formats" element={<Navigate to="/settings/qr-types" replace />} />
             <Route path="/settings/reasons" element={<ScanReasons />} />
             <Route path="/settings/tags" element={<SettingsTags />} />
             <Route path="/settings" element={<Navigate to="/settings/qr-types" replace />} />
             <Route path="/users" element={<Users />} />
             <Route path="/users/:id" element={<UserDetails />} />
+            <Route path="/qr-users" element={<QRUsers />} />
+            <Route path="/qr-users/:id" element={<QRUserDetails />} />
             <Route path="/vehicles" element={<Vehicles />} />
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/scan-logs" element={<ScanLogs />} />

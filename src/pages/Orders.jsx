@@ -282,14 +282,19 @@ export default function Orders() {
                   <th className="py-3.5 px-4">Order ID & Date</th>
                   <th className="py-3.5 px-4">Customer Details</th>
                   <th className="py-3.5 px-4">Product & Category</th>
-                  <th className="py-3.5 px-4">Amount</th>
+                  <th className="py-3.5 px-4">Ordered Qty</th>
+                  <th className="py-3.5 px-4">Total Amount</th>
                   <th className="py-3.5 px-4">QR Claim Status</th>
                   <th className="py-3.5 px-4">Delivery Status</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-                {orders.map((o) => (
+                {orders.map((o) => {
+                  const qty = o.quantity || 1;
+                  const unitPrice = o.unitPrice || Math.round(o.amount / qty);
+
+                  return (
                   <tr key={o._id} className="hover:bg-slate-50/80 transition">
                     {/* Order ID & Date */}
                     <td className="py-3.5 px-4 font-mono">
@@ -334,10 +339,19 @@ export default function Orders() {
                       </div>
                     </td>
 
+                    {/* Ordered Quantity */}
+                    <td className="py-3.5 px-4">
+                      <span className="inline-flex items-center space-x-1 font-black text-xs bg-slate-100 text-slate-900 px-2.5 py-1 rounded-xl border border-slate-200 shadow-2xs">
+                        <span className="text-[#1D56A5]">📦</span>
+                        <span>{qty} {qty === 1 ? 'Kit' : 'Kits'}</span>
+                      </span>
+                    </td>
+
                     {/* Amount */}
                     <td className="py-3.5 px-4">
                       <div className="font-black text-slate-900 text-sm">₹{o.amount}</div>
-                      <span className="inline-block bg-emerald-50 text-[#259A3A] text-[9px] font-bold px-1.5 py-0.5 rounded border border-emerald-200">
+                      <div className="text-[10px] text-slate-400 font-mono">₹{unitPrice} × {qty}</div>
+                      <span className="inline-block bg-emerald-50 text-[#259A3A] text-[9px] font-bold px-1.5 py-0.5 rounded border border-emerald-200 mt-0.5">
                         {o.paymentStatus}
                       </span>
                     </td>
@@ -345,15 +359,27 @@ export default function Orders() {
                     {/* QR Allotment Status */}
                     <td className="py-3.5 px-4">
                       {o.productType === 'DIGITAL' ? (
-                        <div>
-                          <span className="inline-flex items-center space-x-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                            <CheckCircle2 className="w-3 h-3 text-indigo-600" />
-                            <span>Allotted ({o.claimedProductId || 'SD Digital Pass'})</span>
-                          </span>
-                          <div className="text-[9px] text-slate-400 mt-0.5">
-                            Digital E-Pass Auto-Issued
+                        o.isClaimed ? (
+                          <div>
+                            <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                              <span>Registered ({o.claimedProductId || 'SD Digital Pass'})</span>
+                            </span>
+                            <div className="text-[9px] text-slate-400 mt-0.5">
+                              Digital E-Pass Active • {o.claimedAt ? new Date(o.claimedAt).toLocaleDateString() : 'Active'}
+                            </div>
                           </div>
-                        </div>
+                        ) : (
+                          <div>
+                            <span className="inline-flex items-center space-x-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                              <CheckCircle2 className="w-3 h-3 text-indigo-600" />
+                              <span>Allotted ({o.claimedProductId || 'SD Digital Pass'})</span>
+                            </span>
+                            <div className="text-[9px] text-slate-400 mt-0.5">
+                              Pending User Scan & Activation
+                            </div>
+                          </div>
+                        )
                       ) : o.isClaimed ? (
                         <div>
                           <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md">
@@ -416,7 +442,8 @@ export default function Orders() {
                       )}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -440,8 +467,18 @@ export default function Orders() {
               </button>
             </div>
 
-            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs mb-4 space-y-1">
-              <div className="font-bold text-slate-900">{selectedOrder.customerName} ({selectedOrder.customerPhone})</div>
+            <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs mb-4 space-y-1.5">
+              <div className="flex justify-between items-center">
+                <div className="font-bold text-slate-900">{selectedOrder.customerName} ({selectedOrder.customerPhone})</div>
+                <span className="bg-[#1D56A5] text-white px-2.5 py-0.5 rounded-lg text-[10px] font-black">
+                  Qty: {selectedOrder.quantity || 1} {selectedOrder.quantity === 1 ? 'Kit' : 'Kits'}
+                </span>
+              </div>
+              <div className="text-slate-600 font-semibold flex items-center space-x-1.5">
+                <span>📦 {selectedOrder.productName}</span>
+                <span className="text-slate-400">•</span>
+                <span className="font-mono text-slate-800">Total: ₹{selectedOrder.amount}</span>
+              </div>
               <div className="text-slate-600">
                 📍 {selectedOrder.deliveryAddress}
                 {selectedOrder.landmark && <span> (Near {selectedOrder.landmark})</span>}

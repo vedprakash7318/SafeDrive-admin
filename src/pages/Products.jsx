@@ -31,6 +31,7 @@ export default function Products() {
   const fileInputRef = useRef(null);
 
   const [products, setProducts] = useState([]);
+  const [qrTypes, setQrTypes] = useState([]);
   const [loading, setLoading] = useState(false);
 
   // Modal State
@@ -47,6 +48,8 @@ export default function Products() {
     imageUrl: '',
     imagePublicId: '',
     qrType: 'PHYSICAL', // PHYSICAL or DIGITAL
+    qrFor: 'Car', // Vehicle/Asset type: Car, Bike, Luggage, etc.
+    qrTypeId: '',
     price: 299,
     originalPrice: 499,
     discount: 200,
@@ -60,9 +63,16 @@ export default function Products() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE}/admin/products`, authHeader);
+      const [res, typesRes] = await Promise.all([
+        axios.get(`${API_BASE}/admin/products`, authHeader),
+        axios.get(`${API_BASE}/admin/qr-types`, authHeader).catch(() => ({ data: { success: false, types: [] } }))
+      ]);
+
       if (res.data.success) {
         setProducts(res.data.products);
+      }
+      if (typesRes.data.success && Array.isArray(typesRes.data.types)) {
+        setQrTypes(typesRes.data.types);
       }
     } catch (err) {
       console.error(err);
@@ -114,12 +124,15 @@ export default function Products() {
   const handleOpenCreate = () => {
     setEditingProduct(null);
     setError('');
+    const defaultType = qrTypes.length > 0 ? qrTypes[0] : null;
     setForm({
       title: '',
       description: '',
       imageUrl: '',
       imagePublicId: '',
       qrType: 'PHYSICAL',
+      qrFor: defaultType ? defaultType.name : 'Car',
+      qrTypeId: defaultType ? defaultType._id : '',
       price: 299,
       originalPrice: 499,
       discount: 200,
@@ -142,6 +155,8 @@ export default function Products() {
       imageUrl: p.imageUrl || '',
       imagePublicId: p.imagePublicId || '',
       qrType: p.qrType || 'PHYSICAL',
+      qrFor: p.qrFor || 'Car',
+      qrTypeId: p.qrTypeId || '',
       price: p.price,
       originalPrice: origPrice,
       discount: p.discount || (origPrice > p.price ? origPrice - p.price : 0),
@@ -180,6 +195,8 @@ export default function Products() {
       imageUrl: form.imageUrl,
       imagePublicId: form.imagePublicId,
       qrType: form.qrType,
+      qrFor: (form.qrFor || 'Car').trim(),
+      qrTypeId: form.qrTypeId || undefined,
       price: cleanPrice,
       originalPrice: cleanOrig,
       discount: cleanDisc,
@@ -296,24 +313,34 @@ export default function Products() {
                           <div>
                             <div
                               onClick={() => setViewingProduct(p)}
-                              className="font-bold text-slate-900 text-sm hover:text-[#1D56A5] cursor-pointer transition"
+                              className="font-bold text-slate-900 text-sm hover:text-[#1D56A5] cursor-pointer transition flex items-center space-x-2"
                             >
-                              {p.title || p.name}
+                              <span>{p.title || p.name}</span>
+                              <span className="bg-slate-100 text-slate-700 font-mono font-bold text-[10px] px-2 py-0.5 rounded-full border border-slate-200">
+                                Total Sold: {p.soldCount || 0} Units
+                              </span>
                             </div>
                             <p className="text-[11px] text-slate-500 line-clamp-1 max-w-xs">{p.description || 'No description'}</p>
                           </div>
                         </div>
                       </td>
 
-                      {/* 2. Type / Format */}
+                      {/* 2. Type / Format & Category */}
                       <td className="px-6 py-3.5">
-                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md border inline-flex items-center space-x-1 ${
-                          p.qrType === 'DIGITAL'
-                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                            : 'bg-amber-50 text-amber-800 border-amber-200'
-                        }`}>
-                          <span>{p.qrType === 'DIGITAL' ? '💻 DIGITAL PASS' : '📦 PHYSICAL KIT'}</span>
-                        </span>
+                        <div className="space-y-1.5">
+                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md border inline-flex items-center space-x-1 ${
+                            p.qrType === 'DIGITAL'
+                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                              : 'bg-amber-50 text-amber-800 border-amber-200'
+                          }`}>
+                            <span>{p.qrType === 'DIGITAL' ? '💻 DIGITAL PASS' : '📦 PHYSICAL KIT'}</span>
+                          </span>
+                          <div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-[#1D56A5] border border-blue-200 inline-block font-mono">
+                              🏷️ For: {p.qrFor || 'Car'}
+                            </span>
+                          </div>
+                        </div>
                       </td>
 
                       {/* 3. Price & Discount */}
@@ -551,6 +578,44 @@ export default function Products() {
                 </div>
               </div>
 
+              {/* Product For (Fetched dynamically from QR Types / Settings) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Product For *
+                </label>
+                <select
+                  value={form.qrFor}
+                  onChange={(e) => {
+                    const selectedName = e.target.value;
+                    const matchedType = qrTypes.find(t => t.name === selectedName);
+                    setForm({
+                      ...form,
+                      qrFor: selectedName,
+                      qrTypeId: matchedType ? matchedType._id : ''
+                    });
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-900 text-xs font-bold focus:bg-white focus:outline-none focus:border-[#1D56A5] transition"
+                >
+                  {qrTypes.length > 0 ? (
+                    qrTypes.map((t) => (
+                      <option key={t._id} value={t.name}>
+                        {t.name} ({t.copiesPerSet || 2} Stickers/Set)
+                      </option>
+                    ))
+                  ) : (
+                    <>
+                      <option value="Car">Car (2 Stickers/Set)</option>
+                      <option value="Bike">Bike (2 Stickers/Set)</option>
+                      <option value="Luggage">Luggage (1 Stickers/Set)</option>
+                      <option value="Helmet">Helmet (1 Stickers/Set)</option>
+                    </>
+                  )}
+                </select>
+                <p className="text-[10px] text-slate-500 mt-1">
+                  💡 This ensures buyers strictly activate only the matching vehicle/item sticker kit.
+                </p>
+              </div>
+
               {/* Price, MRP & Discount Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-[#E9DFEE]/30 p-3.5 rounded-2xl border border-[#1D56A5]/20">
                 <div>
@@ -711,6 +776,9 @@ export default function Products() {
                         : 'bg-indigo-50 text-indigo-800 border-indigo-200'
                     }`}>
                       {viewingProduct.qrType === 'PHYSICAL' ? '📦 Physical Kit' : '💻 Digital Pass'}
+                    </span>
+                    <span className="text-[10px] font-bold bg-blue-50 text-[#1D56A5] border border-blue-200 px-2 py-0.5 rounded-full font-mono">
+                      🏷️ For {viewingProduct.qrFor || 'Car'}
                     </span>
                     <span className="text-xs text-slate-400">Created {new Date(viewingProduct.createdAt).toLocaleDateString()}</span>
                   </div>
