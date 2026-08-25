@@ -503,6 +503,11 @@ export default function QRManagement() {
                             <QrCode className="w-4 h-4 text-[#1D56A5] group-hover:scale-110 transition" />
                             <span>{qr.copyCode}</span>
                           </Link>
+                          {qr.securityCode && (
+                            <span className="inline-block mt-0.5 font-mono text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded font-bold border border-amber-300">
+                              PIN: {qr.securityCode}
+                            </span>
+                          )}
                         </td>
 
                         <td className="px-6 py-3.5">

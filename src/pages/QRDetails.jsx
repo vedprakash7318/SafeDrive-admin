@@ -340,6 +340,17 @@ export default function QRDetails() {
               <span className="font-mono font-bold text-slate-800">{qr.productId}</span>
             </div>
 
+            {qr.securityCode && (
+              <div className="flex justify-between items-center text-xs py-2 border-b border-slate-100 bg-amber-50 px-2.5 rounded-xl border border-amber-200">
+                <span className="font-bold text-amber-950 flex items-center space-x-1">
+                  <span>🔑 Security PIN</span>
+                </span>
+                <span className="font-mono font-black text-amber-950 text-sm tracking-widest bg-white px-2 py-0.5 rounded border border-amber-300">
+                  {qr.securityCode}
+                </span>
+              </div>
+            )}
+
             <div className="flex justify-between items-center text-xs py-1.5 border-b border-slate-100">
               <span className="text-slate-500">Public Token</span>
               <span className="font-mono text-[11px] text-slate-500 truncate max-w-[140px]">{qr.publicToken}</span>
