@@ -275,8 +275,13 @@ export default function QRDetails() {
             <div className="text-xl font-black text-slate-900 font-mono mb-1">
               {qr.copyCode}
             </div>
+            {qr.securityCode && (
+              <div className="bg-amber-100 text-amber-950 border border-amber-300 font-mono font-black text-xs px-3 py-1 rounded-lg mb-2">
+                🔑 TAG PIN: <span className="tracking-widest">{qr.securityCode}</span>
+              </div>
+            )}
             <div className="text-xs font-semibold text-slate-500 mb-4">
-              Type: <strong className="text-slate-800">{qr.qrType || 'Standard'}</strong>
+              Category: <strong className="text-slate-800">{qr.qrFor || 'Standard'}</strong> • Type: <strong className="text-slate-800">{qr.qrType || 'PHYSICAL'}</strong>
             </div>
 
             {/* QR SVG Preview with Brand Blue center badge */}

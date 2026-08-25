@@ -20,6 +20,7 @@ import {
   ShoppingBag,
   Package,
   Truck,
+  MessageSquare,
   ChevronLeft,
   Menu,
   X
@@ -156,6 +157,22 @@ export default function Sidebar({
       >
         <ShieldCheck className="w-5 h-5 flex-shrink-0" />
         {!isMini && <span>Protected Items & Assets</span>}
+      </NavLink>
+
+      {/* 4.1 Contact Messages */}
+      <NavLink
+        to="/contact-messages"
+        onClick={handleLinkClick}
+        title="Contact Messages"
+        className={({ isActive }) =>
+          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+            ? 'bg-[#1D56A5] text-white font-bold shadow-lg shadow-[#1D56A5]/30'
+            : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+          }`
+        }
+      >
+        <MessageSquare className="w-5 h-5 flex-shrink-0" />
+        {!isMini && <span>Contact Messages</span>}
       </NavLink>
 
       {/* 5. Emergency Alerts */}

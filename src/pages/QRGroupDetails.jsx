@@ -317,7 +317,12 @@ export default function QRGroupDetails() {
                     <tr key={k.productId} className="hover:bg-slate-50/80 transition">
                       <td className="px-5 py-3.5">
                         <div className="font-black text-slate-900 font-mono text-sm">{k.productId}</div>
-                        <span className="text-[10px] text-slate-400">
+                        {k.securityCode && (
+                          <span className="inline-block mt-0.5 font-mono text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded font-bold border border-amber-300">
+                            PIN: {k.securityCode}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-400 block mt-0.5">
                           {k.createdAt ? new Date(k.createdAt).toLocaleDateString() : ''}
                         </span>
                       </td>
@@ -433,7 +438,12 @@ export default function QRGroupDetails() {
                       </td>
 
                       <td className="px-5 py-3.5 font-mono font-bold text-slate-700">
-                        {q.productId}
+                        <div>{q.productId}</div>
+                        {q.securityCode && (
+                          <span className="font-mono text-[9px] bg-amber-100 text-amber-900 px-1 py-0.2 rounded font-bold border border-amber-300">
+                            PIN: {q.securityCode}
+                          </span>
+                        )}
                       </td>
 
                       <td className="px-5 py-3.5">

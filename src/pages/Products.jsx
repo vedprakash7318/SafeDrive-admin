@@ -648,15 +648,23 @@ export default function Products() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-bold text-[#259A3A] uppercase tracking-wider mb-1">
-                    Discount Amount (₹)
+                  <label className="block text-[10px] font-bold text-[#259A3A] uppercase tracking-wider mb-1 flex justify-between items-center">
+                    <span>Discount (%)</span>
+                    {form.originalPrice && form.price && Number(form.originalPrice) > Number(form.price) && (
+                      <span className="text-[10px] text-emerald-600 font-bold">
+                        Save ₹{Number(form.originalPrice) - Number(form.price)}
+                      </span>
+                    )}
                   </label>
                   <input
-                    type="number"
-                    min="0"
-                    value={form.originalPrice && form.price && form.originalPrice > form.price ? form.originalPrice - form.price : form.discount}
-                    onChange={(e) => setForm({ ...form, discount: e.target.value })}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-[#259A3A] text-sm font-bold font-mono"
+                    type="text"
+                    readOnly
+                    value={
+                      form.originalPrice && form.price && Number(form.originalPrice) > Number(form.price)
+                        ? `${Math.round(((Number(form.originalPrice) - Number(form.price)) / Number(form.originalPrice)) * 100)}% OFF`
+                        : '0% OFF'
+                    }
+                    className="w-full bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-[#259A3A] text-sm font-bold font-mono cursor-default"
                   />
                 </div>
               </div>

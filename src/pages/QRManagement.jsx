@@ -618,12 +618,32 @@ export default function QRManagement() {
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-xs font-bold focus:bg-white focus:outline-none focus:border-[#1D56A5]"
                   required
                 >
-                  {qrTypes.map((t) => (
-                    <option key={t._id} value={t.name}>
-                      {t.name} ({t.copiesPerSet || 2} Stickers per Set)
-                    </option>
-                  ))}
+                  {qrTypes.map((t) => {
+                    const isVeh = t.isVehicle !== false && t.category !== 'NON_VEHICLE';
+                    return (
+                      <option key={t._id} value={t.name}>
+                        {isVeh ? '🚗' : '🧳'} {t.name} ({t.copiesPerSet || 2} Stickers per Set) — {isVeh ? 'Vehicle Plate' : '4-Digit PIN'}
+                      </option>
+                    );
+                  })}
                 </select>
+
+                {/* Helper notice based on selected type */}
+                {(() => {
+                  const currentTypeObj = qrTypes.find(t => t.name === selectedQRType);
+                  const isVeh = currentTypeObj ? (currentTypeObj.isVehicle !== false && currentTypeObj.category !== 'NON_VEHICLE') : true;
+                  return isVeh ? (
+                    <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[10px] font-medium text-emerald-800 flex items-center space-x-1.5">
+                      <span>🚗</span>
+                      <span><strong>Vehicle Tag:</strong> Citizen verification will check last 4 digits of the physical number plate.</span>
+                    </div>
+                  ) : (
+                    <div className="mt-1.5 p-2 bg-amber-50 border border-amber-200 rounded-lg text-[10px] font-medium text-amber-900 flex items-center space-x-1.5">
+                      <span>🧳</span>
+                      <span><strong>Non-Vehicle Item:</strong> A unique <strong>4-digit Security PIN</strong> will be auto-generated and printed on the tag.</span>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 1.5 QR Type (Fixed: PHYSICAL / DIGITAL) */}
@@ -975,9 +995,16 @@ export default function QRManagement() {
                           </div>
 
                           {/* Identification Badge */}
-                          <div className="bg-[#E9DFEE] text-[#1D56A5] font-mono font-black text-2xl sm:text-3xl px-8 py-2 rounded-2xl mb-6 border border-[#1D56A5]/25">
+                          <div className="bg-[#E9DFEE] text-[#1D56A5] font-mono font-black text-2xl sm:text-3xl px-8 py-2 rounded-2xl mb-3 border border-[#1D56A5]/25">
                             {qr.copyCode}
                           </div>
+
+                          {/* 4-Digit Security PIN for Non-Vehicle Tags */}
+                          {qr.securityCode && (
+                            <div className="bg-amber-100 text-amber-950 border-2 border-amber-400 font-mono font-black text-lg sm:text-xl px-6 py-1.5 rounded-xl mb-5 shadow-xs">
+                              🔑 TAG PIN: <span className="tracking-widest">{qr.securityCode}</span>
+                            </div>
+                          )}
 
                           {/* Large High-Res QR */}
                           <div className="p-6 sm:p-8 bg-white border-4 border-slate-900 rounded-3xl shadow-xl mb-6">
@@ -989,13 +1016,15 @@ export default function QRManagement() {
                             SCAN WITH CAMERA OR GOOGLE LENS
                           </div>
                           <p className="text-xs sm:text-sm text-slate-600 font-semibold max-w-md mb-6">
-                            To contact vehicle owner instantly & securely without sharing personal mobile number
+                            {qr.securityCode
+                              ? 'Scan to contact item owner securely (Requires 4-Digit PIN printed above)'
+                              : 'To contact vehicle owner instantly & securely without sharing personal mobile number'}
                           </p>
 
                           {/* Footer Info */}
                           <div className="w-full flex justify-between items-center text-xs text-slate-500 font-mono pt-4 border-t border-slate-200">
                             <span>Batch: <strong>{qr.batchId}</strong></span>
-                            <span>Type: <strong>{qr.qrType}</strong></span>
+                            <span>Type: <strong>{qr.qrFor || qr.qrType}</strong></span>
                             <span>Safe Drive Official QR</span>
                           </div>
                         </div>
@@ -1024,7 +1053,7 @@ export default function QRManagement() {
                         {/* Top Cut Scissors Icon */}
                         <div className="w-full flex justify-between items-center text-[9px] font-mono text-slate-400 mb-2">
                           <span>✁ CUT HERE</span>
-                          <span className="font-bold text-[#1D56A5]">{qr.qrType || 'Car'}</span>
+                          <span className="font-bold text-[#1D56A5]">{qr.qrFor || qr.qrType || 'Car'}</span>
                         </div>
 
                         {/* Brand Banner */}
@@ -1033,9 +1062,16 @@ export default function QRManagement() {
                         </div>
 
                         {/* Code Title */}
-                        <div className="text-base font-black text-slate-900 font-mono tracking-tight mb-2">
+                        <div className="text-base font-black text-slate-900 font-mono tracking-tight mb-1">
                           {qr.copyCode}
                         </div>
+
+                        {/* 4-Digit PIN badge if Non-Vehicle */}
+                        {qr.securityCode && (
+                          <div className="bg-amber-100 text-amber-950 border border-amber-300 font-mono font-black text-xs px-2.5 py-0.5 rounded-md mb-2">
+                            PIN: <span className="tracking-widest">{qr.securityCode}</span>
+                          </div>
+                        )}
 
                         {/* QR Code */}
                         <div className="p-2.5 bg-white border border-slate-300 rounded-xl shadow-2xs mb-2">

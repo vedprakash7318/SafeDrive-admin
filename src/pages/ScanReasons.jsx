@@ -17,17 +17,40 @@ import {
   EyeOff,
   RotateCcw,
   Archive,
-  Layers
+  Layers,
+  Search,
+  Bike,
+  Truck,
+  Bell,
+  MapPin,
+  MessageSquare,
+  Shield
 } from 'lucide-react';
 import { useAuth, API_BASE } from '../context/AuthContext';
 
 const getReasonIcon = (iconKey) => {
   switch (iconKey) {
+    // Non-Vehicle Specific Icons
+    case 'missing':
+    case 'lost':
+    case 'search': return Search;
+    case 'other':
+    case 'message': return MessageSquare || MoreHorizontal;
+
+    // Vehicle Specific Icons
     case 'ban': return Ban;
     case 'unlock': return Unlock;
     case 'car': return Car;
-    case 'alert': return AlertTriangle;
-    case 'other': return MoreHorizontal;
+    case 'bike': return Bike;
+    case 'truck': return Truck;
+
+    // Universal / General Icons
+    case 'alert':
+    case 'warning': return AlertTriangle;
+    case 'bell': return Bell;
+    case 'location':
+    case 'mappin': return MapPin;
+    case 'shield': return Shield;
     default: return HelpCircle;
   }
 };
@@ -50,6 +73,7 @@ export default function ScanReasons() {
   const [reasons, setReasons] = useState([]);
   const [loading, setLoading] = useState(false);
   const [viewTab, setViewTab] = useState('active'); // 'active' | 'trash'
+  const [categoryFilter, setCategoryFilter] = useState('ALL'); // 'ALL' | 'VEHICLE' | 'NON_VEHICLE'
 
   // New Reason Form
   const [showAddModal, setShowAddModal] = useState(false);
@@ -58,6 +82,7 @@ export default function ScanReasons() {
     description: '',
     iconKey: 'alert',
     color: 'indigo',
+    applicableTo: 'ALL',
     isOtherType: false
   });
   const [creating, setCreating] = useState(false);
@@ -91,6 +116,13 @@ export default function ScanReasons() {
     fetchReasons(viewTab === 'trash');
   }, [viewTab]);
 
+  // Filtered reasons based on categoryFilter
+  const filteredReasons = reasons.filter((r) => {
+    if (categoryFilter === 'ALL') return true;
+    const cat = r.applicableTo || r.category || 'ALL';
+    return cat === categoryFilter || cat === 'ALL';
+  });
+
   // Create Reason
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -100,7 +132,14 @@ export default function ScanReasons() {
       const res = await axios.post(`${API_BASE}/admin/scan-reasons`, newForm, authHeader);
       if (res.data.success) {
         setShowAddModal(false);
-        setNewForm({ title: '', description: '', iconKey: 'alert', color: 'indigo', isOtherType: false });
+        setNewForm({
+          title: '',
+          description: '',
+          iconKey: 'alert',
+          color: 'indigo',
+          applicableTo: 'ALL',
+          isOtherType: false
+        });
         fetchReasons(false);
       }
     } catch (err) {
@@ -205,38 +244,74 @@ export default function ScanReasons() {
         </div>
       </div>
 
-      {/* View Toggle Tabs: Active vs Soft-Deleted Trash */}
-      <div className="flex items-center space-x-2 border-b border-slate-200 pb-2">
-        <button
-          onClick={() => setViewTab('active')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
-            viewTab === 'active'
-              ? 'bg-indigo-600 text-white shadow-xs'
-              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>Active Reasons</span>
-        </button>
+      {/* View Toggle Tabs: Active vs Soft-Deleted Trash & Category Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3">
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setViewTab('active')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+              viewTab === 'active'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>Active Reasons</span>
+          </button>
 
-        <button
-          onClick={() => setViewTab('trash')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
-            viewTab === 'trash'
-              ? 'bg-rose-600 text-white shadow-xs'
-              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-          }`}
-        >
-          <Archive className="w-4 h-4" />
-          <span>🗑️ Soft-Deleted Reasons</span>
-        </button>
+          <button
+            onClick={() => setViewTab('trash')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+              viewTab === 'trash'
+                ? 'bg-rose-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            }`}
+          >
+            <Archive className="w-4 h-4" />
+            <span>🗑️ Soft-Deleted Reasons</span>
+          </button>
+        </div>
+
+        {/* Category Filter Pills */}
+        <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 w-fit">
+          <button
+            onClick={() => setCategoryFilter('ALL')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              categoryFilter === 'ALL'
+                ? 'bg-white text-slate-900 shadow-2xs'
+                : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            🌐 All ({reasons.length})
+          </button>
+          <button
+            onClick={() => setCategoryFilter('VEHICLE')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              categoryFilter === 'VEHICLE'
+                ? 'bg-white text-emerald-700 shadow-2xs font-black'
+                : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            🚗 Vehicle Only
+          </button>
+          <button
+            onClick={() => setCategoryFilter('NON_VEHICLE')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              categoryFilter === 'NON_VEHICLE'
+                ? 'bg-white text-amber-900 shadow-2xs font-black'
+                : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            🧳 Non-Vehicle (Luggage/Pet/Keys)
+          </button>
+        </div>
       </div>
 
       {/* Reasons Table */}
       <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-xs">
         <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-            {viewTab === 'active' ? `Active Scan Reasons (${reasons.length})` : `Soft-Deleted Reasons (${reasons.length})`}
+            {viewTab === 'active' ? `Active Scan Reasons (${filteredReasons.length})` : `Soft-Deleted Reasons (${filteredReasons.length})`}
           </span>
           <span className="text-[11px] text-indigo-600 font-semibold">
             {viewTab === 'active' ? '✨ Live on scanner interface' : '🛡️ Preserved for past scan history'}
@@ -248,22 +323,24 @@ export default function ScanReasons() {
             <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-black tracking-wider border-b border-slate-100">
               <tr>
                 <th className="px-6 py-4">Visual Icon & Title</th>
-                <th className="px-6 py-4">Type</th>
+                <th className="px-6 py-4">Applicable Category</th>
+                <th className="px-6 py-4">Input Type</th>
                 <th className="px-6 py-4">{viewTab === 'active' ? 'Status' : 'Deleted Date'}</th>
                 <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {reasons.length === 0 ? (
+              {filteredReasons.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-xs text-slate-400">
-                    {viewTab === 'active' ? 'No active scan reasons found.' : 'Trash is empty. No soft-deleted reasons.'}
+                  <td colSpan="5" className="px-6 py-8 text-center text-xs text-slate-400">
+                    {viewTab === 'active' ? 'No scan reasons found matching selected criteria.' : 'Trash is empty.'}
                   </td>
                 </tr>
               ) : (
-                reasons.map((r) => {
+                filteredReasons.map((r) => {
                   const Icon = getReasonIcon(r.iconKey);
                   const colorClass = getReasonColorClasses(r.color);
+                  const cat = r.applicableTo || r.category || 'ALL';
                   return (
                     <tr key={r._id} className="hover:bg-slate-50/80 transition">
                       <td className="px-6 py-4 flex items-center space-x-3">
@@ -274,6 +351,21 @@ export default function ScanReasons() {
                           <div className="font-bold text-slate-900">{r.title}</div>
                           {r.description && <div className="text-xs text-slate-500">{r.description}</div>}
                         </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {cat === 'VEHICLE' ? (
+                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2.5 py-1 rounded-full">
+                            🚗 Vehicle Only
+                          </span>
+                        ) : cat === 'NON_VEHICLE' ? (
+                          <span className="bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-bold px-2.5 py-1 rounded-full">
+                            🧳 Non-Vehicle Only
+                          </span>
+                        ) : (
+                          <span className="bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-bold px-2.5 py-1 rounded-full">
+                            🌐 All / Universal
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         {r.isOtherType ? (
@@ -309,7 +401,7 @@ export default function ScanReasons() {
                         {viewTab === 'active' ? (
                           <>
                             <button
-                              onClick={() => setEditingReason(r)}
+                              onClick={() => setEditingReason({ ...r, applicableTo: r.applicableTo || r.category || 'ALL' })}
                               className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
                             >
                               <Edit2 className="w-3.5 h-3.5" />
@@ -356,12 +448,65 @@ export default function ScanReasons() {
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Reason Title *</label>
                 <input
                   type="text"
-                  placeholder="e.g. Tyre puncture or flat tyre"
+                  placeholder="e.g. Found Lost Luggage or Tyre Puncture"
                   value={newForm.title}
                   onChange={(e) => setNewForm({ ...newForm, title: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:bg-white focus:outline-none focus:border-indigo-600"
                   required
                 />
+              </div>
+
+              {/* Category / Applicable To Selection */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Applicable QR Category *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const iconKey = (newForm.iconKey === 'missing') ? 'car' : newForm.iconKey;
+                      setNewForm({ ...newForm, applicableTo: 'VEHICLE', iconKey });
+                    }}
+                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
+                      newForm.applicableTo === 'VEHICLE'
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-950 ring-2 ring-emerald-400/20 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-base mb-0.5">🚗</span>
+                    <span>Vehicle Only</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const iconKey = (newForm.iconKey !== 'other') ? 'missing' : 'other';
+                      setNewForm({ ...newForm, applicableTo: 'NON_VEHICLE', iconKey });
+                    }}
+                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
+                      newForm.applicableTo === 'NON_VEHICLE'
+                        ? 'bg-amber-50 border-amber-400 text-amber-950 ring-2 ring-amber-400/20 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-base mb-0.5">🧳</span>
+                    <span>Non-Vehicle</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewForm({ ...newForm, applicableTo: 'ALL' })}
+                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
+                      newForm.applicableTo === 'ALL'
+                        ? 'bg-indigo-50 border-indigo-400 text-indigo-950 ring-2 ring-indigo-400/20 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-base mb-0.5">🌐</span>
+                    <span>All / Universal</span>
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -370,13 +515,42 @@ export default function ScanReasons() {
                   <select
                     value={newForm.iconKey}
                     onChange={(e) => setNewForm({ ...newForm, iconKey: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-sm"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:border-indigo-600"
                   >
-                    <option value="ban">🚫 No Parking / Restriction (ban)</option>
-                    <option value="unlock">🔓 Unlocked / Open (unlock)</option>
-                    <option value="car">🚗 Vehicle / Movement (car)</option>
-                    <option value="alert">⚠️ Warning / Emergency (alert)</option>
-                    <option value="other">💬 Custom / Other (other)</option>
+                    {newForm.applicableTo === 'NON_VEHICLE' && (
+                      <>
+                        <option value="missing">🔍 Missing / Lost & Found (missing)</option>
+                        <option value="other">💬 Others / Custom Note (other)</option>
+                      </>
+                    )}
+
+                    {newForm.applicableTo === 'VEHICLE' && (
+                      <>
+                        <option value="car">🚗 Vehicle / Movement (car)</option>
+                        <option value="ban">🚫 No Parking / Restriction (ban)</option>
+                        <option value="unlock">🔓 Unlocked / Open Window (unlock)</option>
+                        <option value="bike">🏍️ Bike / Two-Wheeler (bike)</option>
+                        <option value="truck">🚚 Truck / Heavy Vehicle (truck)</option>
+                        <option value="alert">⚠️ Warning / Emergency (alert)</option>
+                        <option value="other">💬 Custom Text / Message (other)</option>
+                      </>
+                    )}
+
+                    {newForm.applicableTo === 'ALL' && (
+                      <>
+                        <option value="missing">🔍 Missing / Lost & Found (missing)</option>
+                        <option value="car">🚗 Vehicle / Movement (car)</option>
+                        <option value="ban">🚫 No Parking / Restriction (ban)</option>
+                        <option value="unlock">🔓 Unlocked / Open Window (unlock)</option>
+                        <option value="bike">🏍️ Bike / Two-Wheeler (bike)</option>
+                        <option value="truck">🚚 Truck / Heavy Vehicle (truck)</option>
+                        <option value="alert">⚠️ Warning / Emergency (alert)</option>
+                        <option value="bell">🔔 Notification Bell (bell)</option>
+                        <option value="location">📍 Location / Towing (location)</option>
+                        <option value="shield">🛡️ Shield / Security (shield)</option>
+                        <option value="other">💬 Custom Text / Message (other)</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -452,19 +626,101 @@ export default function ScanReasons() {
                 />
               </div>
 
+              {/* Category / Applicable To Selection */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Applicable QR Category *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const iconKey = (editingReason.iconKey === 'missing') ? 'car' : editingReason.iconKey;
+                      setEditingReason({ ...editingReason, applicableTo: 'VEHICLE', category: 'VEHICLE', iconKey });
+                    }}
+                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
+                      (editingReason.applicableTo || editingReason.category) === 'VEHICLE'
+                        ? 'bg-emerald-50 border-emerald-400 text-emerald-950 ring-2 ring-emerald-400/20 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-base mb-0.5">🚗</span>
+                    <span>Vehicle Only</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const iconKey = (editingReason.iconKey !== 'other') ? 'missing' : 'other';
+                      setEditingReason({ ...editingReason, applicableTo: 'NON_VEHICLE', category: 'NON_VEHICLE', iconKey });
+                    }}
+                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
+                      (editingReason.applicableTo || editingReason.category) === 'NON_VEHICLE'
+                        ? 'bg-amber-50 border-amber-400 text-amber-950 ring-2 ring-amber-400/20 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-base mb-0.5">🧳</span>
+                    <span>Non-Vehicle</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingReason({ ...editingReason, applicableTo: 'ALL', category: 'ALL' })}
+                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
+                      (!editingReason.applicableTo && !editingReason.category) || (editingReason.applicableTo || editingReason.category) === 'ALL'
+                        ? 'bg-indigo-50 border-indigo-400 text-indigo-950 ring-2 ring-indigo-400/20 shadow-xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    <span className="text-base mb-0.5">🌐</span>
+                    <span>All / Universal</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Icon</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Icon Style</label>
                   <select
                     value={editingReason.iconKey}
                     onChange={(e) => setEditingReason({ ...editingReason, iconKey: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-sm"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:border-indigo-600"
                   >
-                    <option value="ban">🚫 No Parking (ban)</option>
-                    <option value="unlock">🔓 Unlocked (unlock)</option>
-                    <option value="car">🚗 Vehicle (car)</option>
-                    <option value="alert">⚠️ Warning (alert)</option>
-                    <option value="other">💬 Other (other)</option>
+                    {(editingReason.applicableTo === 'NON_VEHICLE' || editingReason.category === 'NON_VEHICLE') && (
+                      <>
+                        <option value="missing">🔍 Missing / Lost & Found (missing)</option>
+                        <option value="other">💬 Others / Custom Note (other)</option>
+                      </>
+                    )}
+
+                    {(editingReason.applicableTo === 'VEHICLE' || editingReason.category === 'VEHICLE') && (
+                      <>
+                        <option value="car">🚗 Vehicle / Movement (car)</option>
+                        <option value="ban">🚫 No Parking / Restriction (ban)</option>
+                        <option value="unlock">🔓 Unlocked / Open Window (unlock)</option>
+                        <option value="bike">🏍️ Bike / Two-Wheeler (bike)</option>
+                        <option value="truck">🚚 Truck / Heavy Vehicle (truck)</option>
+                        <option value="alert">⚠️ Warning / Emergency (alert)</option>
+                        <option value="other">💬 Custom Text / Message (other)</option>
+                      </>
+                    )}
+
+                    {(!editingReason.applicableTo || editingReason.applicableTo === 'ALL' || (!editingReason.applicableTo && editingReason.category === 'ALL')) && (
+                      <>
+                        <option value="missing">🔍 Missing / Lost & Found (missing)</option>
+                        <option value="car">🚗 Vehicle / Movement (car)</option>
+                        <option value="ban">🚫 No Parking / Restriction (ban)</option>
+                        <option value="unlock">🔓 Unlocked / Open Window (unlock)</option>
+                        <option value="bike">🏍️ Bike / Two-Wheeler (bike)</option>
+                        <option value="truck">🚚 Truck / Heavy Vehicle (truck)</option>
+                        <option value="alert">⚠️ Warning / Emergency (alert)</option>
+                        <option value="bell">🔔 Notification Bell (bell)</option>
+                        <option value="location">📍 Location / Towing (location)</option>
+                        <option value="shield">🛡️ Shield / Security (shield)</option>
+                        <option value="other">💬 Custom Text / Message (other)</option>
+                      </>
+                    )}
                   </select>
                 </div>
 

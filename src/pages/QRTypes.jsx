@@ -25,6 +25,7 @@ export default function QRTypes() {
   // New Type Modal
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
+  const [newCategory, setNewCategory] = useState('VEHICLE');
   const [newCopiesPerSet, setNewCopiesPerSet] = useState(2);
   const [creating, setCreating] = useState(false);
 
@@ -65,12 +66,18 @@ export default function QRTypes() {
     try {
       const res = await axios.post(
         `${API_BASE}/admin/qr-types`,
-        { name: newTypeName, copiesPerSet: Number(newCopiesPerSet) || 2 },
+        {
+          name: newTypeName,
+          category: newCategory,
+          isVehicle: newCategory === 'VEHICLE',
+          copiesPerSet: Number(newCopiesPerSet) || 2
+        },
         authHeader
       );
       if (res.data.success) {
         setShowAddModal(false);
         setNewTypeName('');
+        setNewCategory('VEHICLE');
         setNewCopiesPerSet(2);
         fetchTypes(false);
       }
@@ -89,7 +96,12 @@ export default function QRTypes() {
     try {
       const res = await axios.put(
         `${API_BASE}/admin/qr-types/${editingType._id}`,
-        { name: editingType.name, copiesPerSet: Number(editingType.copiesPerSet) || 2 },
+        {
+          name: editingType.name,
+          category: editingType.category || 'VEHICLE',
+          isVehicle: editingType.category !== 'NON_VEHICLE',
+          copiesPerSet: Number(editingType.copiesPerSet) || 2
+        },
         authHeader
       );
       if (res.data.success) {
@@ -207,7 +219,8 @@ export default function QRTypes() {
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold tracking-wider border-b border-slate-100">
               <tr>
-                <th className="px-5 py-3.5">QR Type Name</th>
+                <th className="px-5 py-3.5">QR Type / Name</th>
+                <th className="px-5 py-3.5">Category & Verification Flow</th>
                 <th className="px-5 py-3.5">Copies Generated Per Set</th>
                 <th className="px-5 py-3.5">Total Sets Created</th>
                 <th className="px-5 py-3.5">{viewTab === 'active' ? 'Created Date' : 'Deleted Date'}</th>
@@ -217,18 +230,30 @@ export default function QRTypes() {
             <tbody className="divide-y divide-slate-100">
               {types.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-5 py-8 text-center text-xs text-slate-400">
+                  <td colSpan="6" className="px-5 py-8 text-center text-xs text-slate-400">
                     {viewTab === 'active' ? 'No active QR types found.' : 'Trash is empty. No soft-deleted items.'}
                   </td>
                 </tr>
               ) : (
                 types.map((t) => {
                   const copies = t.copiesPerSet || 2;
+                  const isVehicleType = t.isVehicle !== false && t.category !== 'NON_VEHICLE';
                   return (
                     <tr key={t._id} className="hover:bg-[#E9DFEE]/20 transition">
                       <td className="px-5 py-3.5 font-bold text-slate-900 flex items-center space-x-2">
                         <Box className="w-4 h-4 text-[#1D56A5]" />
                         <span>{t.name}</span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        {isVehicleType ? (
+                          <span className="inline-flex items-center space-x-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold px-2.5 py-0.5 rounded-md">
+                            <span>🚗 Vehicle (Plate Verification)</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center space-x-1 bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold px-2.5 py-0.5 rounded-md">
+                            <span>🧳 Non-Vehicle (4-Digit PIN)</span>
+                          </span>
+                        )}
                       </td>
                       <td className="px-5 py-3.5">
                         <span className="inline-flex items-center space-x-1 bg-blue-50 text-[#1D56A5] border border-[#1D56A5]/25 text-xs font-bold px-2.5 py-0.5 rounded-md">
@@ -248,15 +273,19 @@ export default function QRTypes() {
                         {viewTab === 'active' ? (
                           <>
                             <button
-                              onClick={() => setEditingType({ ...t, copiesPerSet: t.copiesPerSet || 2 })}
-                              className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1"
+                              onClick={() => setEditingType({
+                                ...t,
+                                category: t.category || (t.isVehicle === false ? 'NON_VEHICLE' : 'VEHICLE'),
+                                copiesPerSet: t.copiesPerSet || 2
+                              })}
+                              className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1 cursor-pointer"
                             >
                               <Edit2 className="w-3 h-3" />
                               <span>Edit</span>
                             </button>
                             <button
                               onClick={() => setDeleteTarget(t)}
-                              className="text-xs bg-red-50 hover:bg-red-100 text-[#E94E1A] border border-[#E94E1A]/30 font-semibold px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1"
+                              className="text-xs bg-red-50 hover:bg-red-100 text-[#E94E1A] border border-[#E94E1A]/30 font-semibold px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1 cursor-pointer"
                             >
                               <Trash2 className="w-3 h-3" />
                               <span>Delete</span>
@@ -265,7 +294,7 @@ export default function QRTypes() {
                         ) : (
                           <button
                             onClick={() => handleRestore(t._id)}
-                            className="text-xs bg-emerald-50 hover:bg-emerald-100 text-[#259A3A] border border-[#259A3A]/30 font-bold px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1"
+                            className="text-xs bg-emerald-50 hover:bg-emerald-100 text-[#259A3A] border border-[#259A3A]/30 font-bold px-2.5 py-1 rounded-lg transition inline-flex items-center space-x-1 cursor-pointer"
                           >
                             <RotateCcw className="w-3 h-3" />
                             <span>Restore</span>
@@ -296,17 +325,50 @@ export default function QRTypes() {
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  QR Type Name *
+                  QR Type / Category Name *
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Car, Bike, Luggage, Key Fob"
+                  placeholder="e.g. Car, Bike, Luggage, Bag, Pet Tag, Key Fob"
                   value={newTypeName}
                   onChange={(e) => setNewTypeName(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:bg-white focus:outline-none focus:border-[#1D56A5] transition"
                   autoFocus
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Item Category & Verification Type *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewCategory('VEHICLE')}
+                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                      newCategory === 'VEHICLE'
+                        ? 'border-[#1D56A5] bg-blue-50/70 text-[#1D56A5] ring-2 ring-[#1D56A5]/20 font-bold'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-medium'
+                    }`}
+                  >
+                    <span className="text-xs">🚗 Vehicle Tag</span>
+                    <span className="text-[10px] text-slate-500 mt-1 font-normal">Number plate verification (Car, Bike, etc.)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewCategory('NON_VEHICLE')}
+                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                      newCategory === 'NON_VEHICLE'
+                        ? 'border-[#F36F21] bg-orange-50/70 text-[#F36F21] ring-2 ring-[#F36F21]/20 font-bold'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-medium'
+                    }`}
+                  >
+                    <span className="text-xs">🧳 Non-Vehicle (PIN)</span>
+                    <span className="text-[10px] text-slate-500 mt-1 font-normal">Generates unique 4-digit PIN printed on tag</span>
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -342,7 +404,7 @@ export default function QRTypes() {
                 <button
                   type="submit"
                   disabled={creating}
-                  className="w-1/2 bg-[#1D56A5] hover:bg-[#164382] text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs flex items-center justify-center space-x-2"
+                  className="w-1/2 bg-[#1D56A5] hover:bg-[#164382] text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs flex items-center justify-center space-x-2 cursor-pointer"
                 >
                   {creating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>+ Save Type</span>}
                 </button>
@@ -381,6 +443,39 @@ export default function QRTypes() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Item Category & Verification Type *
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingType({ ...editingType, category: 'VEHICLE' })}
+                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                      (editingType.category || 'VEHICLE') === 'VEHICLE'
+                        ? 'border-[#1D56A5] bg-blue-50/70 text-[#1D56A5] ring-2 ring-[#1D56A5]/20 font-bold'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-medium'
+                    }`}
+                  >
+                    <span className="text-xs">🚗 Vehicle Tag</span>
+                    <span className="text-[10px] text-slate-500 mt-1 font-normal">Number plate verification</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingType({ ...editingType, category: 'NON_VEHICLE' })}
+                    className={`p-3 rounded-xl border text-left transition flex flex-col justify-between ${
+                      editingType.category === 'NON_VEHICLE'
+                        ? 'border-[#F36F21] bg-orange-50/70 text-[#F36F21] ring-2 ring-[#F36F21]/20 font-bold'
+                        : 'border-slate-200 hover:bg-slate-50 text-slate-700 font-medium'
+                    }`}
+                  >
+                    <span className="text-xs">🧳 Non-Vehicle (PIN)</span>
+                    <span className="text-[10px] text-slate-500 mt-1 font-normal">4-digit PIN printed on tag</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Number of Copies Generated per Set *
                 </label>
                 <div className="flex items-center space-x-3">
@@ -412,7 +507,7 @@ export default function QRTypes() {
                 <button
                   type="submit"
                   disabled={updating}
-                  className="w-1/2 bg-[#1D56A5] hover:bg-[#164382] text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs flex items-center justify-center space-x-2"
+                  className="w-1/2 bg-[#1D56A5] hover:bg-[#164382] text-white font-bold py-2.5 rounded-xl shadow-md transition text-xs flex items-center justify-center space-x-2 cursor-pointer"
                 >
                   {updating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <span>Save Changes</span>}
                 </button>

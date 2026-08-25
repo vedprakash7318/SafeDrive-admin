@@ -23,6 +23,7 @@ import ScanLogs from './pages/ScanLogs';
 import Products from './pages/Products';
 import ProductDetails from './pages/ProductDetails';
 import Orders from './pages/Orders';
+import ContactMessages from './pages/ContactMessages';
 
 function AuthenticatedApp() {
   const { token } = useAuth();
@@ -79,6 +80,7 @@ function AuthenticatedApp() {
             <Route path="/qr-users" element={<QRUsers />} />
             <Route path="/qr-users/:id" element={<QRUserDetails />} />
             <Route path="/vehicles" element={<Vehicles />} />
+            <Route path="/contact-messages" element={<ContactMessages />} />
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/scan-logs" element={<ScanLogs />} />
             <Route path="*" element={<Navigate to="/" replace />} />
