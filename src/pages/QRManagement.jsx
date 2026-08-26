@@ -223,6 +223,20 @@ export default function QRManagement() {
     }
   };
 
+  // Toggle Batch Print Status
+  const handleTogglePrintStatus = async (group) => {
+    const nextStatus = !group.isPrinted;
+    if (!confirm(`Mark batch ${group.groupName} as ${nextStatus ? 'Printed' : 'Not Printed'}?`)) return;
+    try {
+      const res = await axios.put(`${API_BASE}/admin/qr/batch/${group.groupName}/print-status`, { isPrinted: nextStatus }, authHeader);
+      if (res.data.success) {
+        fetchGroups();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error updating batch print status');
+    }
+  };
+
   // Toggle QR Status (Active / Suspended)
   const handleToggleQRStatus = async (qr) => {
     const nextStatus = qr.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
@@ -407,13 +421,27 @@ export default function QRManagement() {
                               💻 Digital (No Print)
                             </span>
                           ) : (
-                            <button
-                              onClick={() => handlePrintGroup(g)}
-                              className="text-xs bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
-                            >
-                              <Printer className="w-3.5 h-3.5 text-[#1D56A5]" />
-                              <span>Print Sheet</span>
-                            </button>
+                            <>
+                              <button
+                                onClick={() => handleTogglePrintStatus(g)}
+                                className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center space-x-1 shadow-2xs ${
+                                  g.isPrinted 
+                                    ? 'bg-[#259A3A]/10 text-[#259A3A] border-[#259A3A]/30 hover:bg-[#259A3A] hover:text-white' 
+                                    : 'bg-amber-50 text-amber-600 border-amber-300 hover:bg-amber-500 hover:text-white'
+                                }`}
+                              >
+                                {g.isPrinted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Printer className="w-3.5 h-3.5" />}
+                                <span>{g.isPrinted ? 'Printed' : 'Not Printed'}</span>
+                              </button>
+
+                              <button
+                                onClick={() => handlePrintGroup(g)}
+                                className="text-xs bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
+                              >
+                                <Printer className="w-3.5 h-3.5 text-[#1D56A5]" />
+                                <span>Print Sheet</span>
+                              </button>
+                            </>
                           )}
                         </td>
                       </tr>
