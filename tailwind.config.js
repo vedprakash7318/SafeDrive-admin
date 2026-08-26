@@ -8,11 +8,15 @@ export default {
     extend: {
       colors: {
         brand: {
-          orange: '#E94E1A',
-          green: '#259A3A',
-          blue: '#1D56A5',
-          bg: '#E9DFEE',
+          green: '#16A34A',
+          orange: '#F97316',
+          dark: '#0F172A',
+          bg: '#F1F5F9',
         }
+      },
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        display: ['Poppins', 'sans-serif'],
       }
     },
   },

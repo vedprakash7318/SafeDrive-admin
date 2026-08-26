@@ -53,8 +53,8 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="Dashboard"
         className={({ isActive }) =>
-          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
-            ? 'bg-[#1D56A5] text-white font-bold shadow-lg shadow-[#1D56A5]/30'
+          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+            ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
         }
@@ -69,8 +69,8 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="Customer Orders"
         className={({ isActive }) =>
-          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
-            ? 'bg-[#1D56A5] text-white font-bold shadow-lg shadow-[#1D56A5]/30'
+          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+            ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
         }
@@ -85,8 +85,8 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="QR Inventory"
         className={({ isActive }) =>
-          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
-            ? 'bg-[#1D56A5] text-white font-bold shadow-lg shadow-[#1D56A5]/30'
+          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+            ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
         }
@@ -101,8 +101,8 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="Products Catalog"
         className={({ isActive }) =>
-          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
-            ? 'bg-[#1D56A5] text-white font-bold shadow-lg shadow-[#1D56A5]/30'
+          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+            ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
         }
@@ -117,8 +117,8 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="Customer & Buyer Accounts"
         className={({ isActive }) =>
-          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
-            ? 'bg-[#1D56A5] text-white font-bold shadow-lg shadow-[#1D56A5]/30'
+          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+            ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
         }
@@ -133,7 +133,7 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="QR Users (Vehicle Owners)"
         className={({ isActive }) =>
-          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
             ? 'bg-[#259A3A] text-white font-bold shadow-lg shadow-[#259A3A]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
@@ -149,8 +149,8 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="Protected Items & Assets"
         className={({ isActive }) =>
-          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
-            ? 'bg-[#1D56A5] text-white font-bold shadow-lg shadow-[#1D56A5]/30'
+          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+            ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
         }
@@ -165,8 +165,8 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="Contact Messages"
         className={({ isActive }) =>
-          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
-            ? 'bg-[#1D56A5] text-white font-bold shadow-lg shadow-[#1D56A5]/30'
+          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+            ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
         }
@@ -181,8 +181,8 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="Emergency Alerts"
         className={({ isActive }) =>
-          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
-            ? 'bg-[#E94E1A] text-white font-bold shadow-lg shadow-[#E94E1A]/30'
+          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+            ? 'bg-[#F97316] text-white font-bold shadow-lg shadow-[#F97316]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
         }
@@ -197,8 +197,8 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="Scan Logs & History"
         className={({ isActive }) =>
-          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
-            ? 'bg-[#1D56A5] text-white font-bold shadow-lg shadow-[#1D56A5]/30'
+          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+            ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
         }
@@ -213,8 +213,8 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="Extra Quota Pricing"
         className={({ isActive }) =>
-          `flex items-center ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
-            ? 'bg-[#1D56A5] text-white font-bold shadow-lg shadow-[#1D56A5]/30'
+          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+            ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
         }
@@ -232,7 +232,7 @@ export default function Sidebar({
             title="Settings"
             className={({ isActive }) =>
               `flex items-center justify-center px-0 py-3 rounded-xl font-medium transition ${isSettingsActive
-                ? 'bg-[#1D56A5] text-white font-bold shadow-lg shadow-[#1D56A5]/30'
+                ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
                 : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
               }`
             }
@@ -262,7 +262,7 @@ export default function Sidebar({
                   to="/settings/qr-types"
                   onClick={handleLinkClick}
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#1D56A5] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
                     }`
                   }
                 >
@@ -273,7 +273,7 @@ export default function Sidebar({
                   to="/settings/reasons"
                   onClick={handleLinkClick}
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#1D56A5] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
                     }`
                   }
                 >
@@ -284,11 +284,22 @@ export default function Sidebar({
                   to="/settings/tags"
                   onClick={handleLinkClick}
                   className={({ isActive }) =>
-                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#1D56A5] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
                     }`
                   }
                 >
                   🔖 Batch Groups & Tags
+                </NavLink>
+
+                <NavLink
+                  to="/settings/global"
+                  onClick={handleLinkClick}
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  ⚙️ Global Settings
                 </NavLink>
               </div>
             )}
@@ -302,11 +313,15 @@ export default function Sidebar({
     <>
       {/* 1. DESKTOP FIXED SIDEBAR */}
       <aside
-        className={`hidden md:flex flex-col h-full bg-[#13182e] text-slate-300 p-4 shadow-xl flex-shrink-0 z-30 transition-all duration-300 ease-in-out border-r border-slate-800/80 ${collapsed ? 'w-20' : 'w-64'
+        className={`hidden md:flex flex-col h-full bg-[#0F172A] text-slate-300 p-4 shadow-xl flex-shrink-0 z-30 transition-all duration-300 ease-in-out border-r border-slate-800/80 ${collapsed ? 'w-20' : 'w-64'
           }`}
       >
         {/* Brand Header */}
-        <div className="flex items-center justify-between px-1 py-3 mb-4 border-b border-slate-800/80 min-h-[56px]">
+        <div 
+          className={`flex items-center ${collapsed ? 'justify-center cursor-pointer' : 'justify-between'} px-1 py-3 mb-4 border-b border-slate-800/80 min-h-[56px]`}
+          onClick={collapsed ? onToggleCollapse : undefined}
+          title={collapsed ? 'Expand Sidebar' : ''}
+        >
           <div className="flex items-center space-x-3 overflow-hidden">
             <img
               src="/Safe Drive Tag Logo.jpg.jpeg"
@@ -325,17 +340,10 @@ export default function Sidebar({
             )}
           </div>
 
-          <button
-            onClick={onToggleCollapse}
-            title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800/80 transition"
-          >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
         </div>
 
         {/* Scrollable Navigation */}
-        <div className="flex-1 overflow-y-auto pr-0.5 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto pr-0.5 no-scrollbar">
           {renderNavLinks(collapsed)}
         </div>
 
@@ -344,8 +352,8 @@ export default function Sidebar({
           <button
             onClick={logout}
             title="Logout"
-            className={`w-full bg-gradient-to-r from-[#E94E1A] to-[#c73e12] hover:from-[#d84414] hover:to-[#b3350e] text-white font-bold ${collapsed ? 'py-3 px-0 justify-center' : 'py-3 px-4'
-              } rounded-xl shadow-lg shadow-[#E94E1A]/25 transition flex items-center justify-center space-x-2 text-sm`}
+            className={`w-full bg-gradient-to-r from-[#F97316] to-[#c73e12] hover:from-[#d84414] hover:to-[#b3350e] text-white font-bold ${collapsed ? 'py-3 px-0 justify-center' : 'py-3 px-4'
+              } rounded-xl shadow-lg shadow-[#F97316]/25 transition flex items-center justify-center space-x-2 text-sm`}
           >
             <LogOut className="w-4 h-4 flex-shrink-0" />
             {!collapsed && <span>Logout</span>}
@@ -361,16 +369,16 @@ export default function Sidebar({
             onClick={onCloseMobile}
           />
 
-          <aside className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-[#13182e] text-slate-300 p-4 flex flex-col justify-between shadow-2xl z-50 overflow-y-auto">
+          <aside className="fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-[#0F172A] text-slate-300 p-4 flex flex-col justify-between shadow-2xl z-50 overflow-y-auto">
             <div>
               <div className="flex items-center justify-between px-2 py-3 mb-4 border-b border-slate-800/80">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-tr from-[#1D56A5] to-[#E94E1A] text-white rounded-xl shadow-lg shadow-[#1D56A5]/30 flex items-center justify-center font-black text-xl">
+                  <div className="w-10 h-10 bg-gradient-to-tr from-[#16A34A] to-[#F97316] text-white rounded-xl shadow-lg shadow-[#16A34A]/30 flex items-center justify-center font-black text-xl">
                     D
                   </div>
                   <div>
                     <div className="font-black text-lg tracking-tight text-white">Dashboard</div>
-                    <div className="text-[10px] uppercase tracking-wider text-[#E94E1A] font-bold">Safe Drive Admin</div>
+                    <div className="text-[10px] uppercase tracking-wider text-[#F97316] font-bold">Safe Drive Admin</div>
                   </div>
                 </div>
 
@@ -388,7 +396,7 @@ export default function Sidebar({
             <div className="pt-4 border-t border-slate-800/80">
               <button
                 onClick={logout}
-                className="w-full bg-gradient-to-r from-[#E94E1A] to-[#c73e12] hover:from-[#d84414] hover:to-[#b3350e] text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-[#E94E1A]/25 transition flex items-center justify-center space-x-2 text-sm"
+                className="w-full bg-gradient-to-r from-[#F97316] to-[#c73e12] hover:from-[#d84414] hover:to-[#b3350e] text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-[#F97316]/25 transition flex items-center justify-center space-x-2 text-sm"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Logout</span>

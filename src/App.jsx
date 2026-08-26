@@ -11,6 +11,7 @@ import QRGroupDetails from './pages/QRGroupDetails';
 import QRTypes from './pages/QRTypes';
 import QRFormats from './pages/QRFormats';
 import SettingsTags from './pages/SettingsTags';
+import GlobalSettings from './pages/GlobalSettings';
 import ScanReasons from './pages/ScanReasons';
 import ExtraPricing from './pages/ExtraPricing';
 import Users from './pages/Users';
@@ -57,7 +58,11 @@ function AuthenticatedApp() {
       {/* 2. Main Layout Container (Header is fixed, Main body scrolls) */}
       <div className="flex-1 flex flex-col h-full min-w-0 overflow-hidden">
         {/* Fixed Header */}
-        <Header onToggleSidebar={handleToggleSidebar} />
+        <Header 
+          onToggleSidebar={handleToggleSidebar} 
+          sidebarCollapsed={sidebarCollapsed}
+          mobileSidebarOpen={mobileSidebarOpen}
+        />
 
         {/* Scrollable Main Content Body (Only this area scrolls!) */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 bg-[#f8fafc]">
@@ -74,6 +79,7 @@ function AuthenticatedApp() {
             <Route path="/settings/qr-formats" element={<Navigate to="/settings/qr-types" replace />} />
             <Route path="/settings/reasons" element={<ScanReasons />} />
             <Route path="/settings/tags" element={<SettingsTags />} />
+            <Route path="/settings/global" element={<GlobalSettings />} />
             <Route path="/settings" element={<Navigate to="/settings/qr-types" replace />} />
             <Route path="/users" element={<Users />} />
             <Route path="/users/:id" element={<UserDetails />} />
