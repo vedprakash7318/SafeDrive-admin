@@ -1151,6 +1151,7 @@ export default function QRManagement() {
                     <option value="13x19_GRID_18">📑 13×19 Inch (330×483 mm) — 18 Stickers (3×6 Density)</option>
                     <option value="A4_GRID_6">📄 A4 Sheet (210×297 mm) — 6 Stickers (2×3 Grid)</option>
                     <option value="A3_GRID_8">📄 A3 Sheet (297×420 mm) — 8 Stickers (2×4 Grid)</option>
+                    <option value="A3_CARD_21">💳 Standard Card (9.2×5.49 cm) — A3 Sheet (21 Cards, 3×7 Grid)</option>
                   </select>
                 </div>
 
@@ -1268,7 +1269,61 @@ export default function QRManagement() {
                   );
                 }
 
-                // 2. 13x19 INCH (3x4 or 3x6 Grid) or A4 / A3 Multi-Sticker Sheet
+                // 2. NEW CARD FORMAT (9.2cm x 5.49cm)
+                if (printPaperSize === 'A3_CARD_21') {
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 print:gap-x-0 print:gap-y-1 place-items-center" style={{ width: '100%', maxWidth: '29.7cm', margin: '0 auto' }}>
+                      {displayItems.map((qr) => (
+                        <div
+                          key={qr._id}
+                          className="relative print-no-break overflow-hidden shadow-sm border border-slate-200 print:border-none print:shadow-none"
+                          style={{
+                            width: '9.2cm',
+                            height: '5.49cm',
+                            backgroundImage: `url('/card_bg.png')`,
+                            backgroundSize: '100% 100%',
+                            backgroundRepeat: 'no-repeat',
+                          }}
+                        >
+                          {/* QR Code container tightly bound to the white rounded box in the image */}
+                          <div 
+                            className="absolute flex items-center justify-center bg-white"
+                            style={{
+                              left: '52.5%',
+                              top: '7%',
+                              width: '44%',
+                              height: '71%',
+                              borderRadius: '8%'
+                            }}
+                          >
+                            <SafeDriveQRCode
+                              value={`${PUBLIC_SCAN_BASE}/${qr.publicToken}`}
+                              size={150}
+                              className="max-w-[92%] max-h-[92%] object-contain"
+                              includeMargin={false}
+                            />
+                          </div>
+
+                          {/* 4-Digit Security PIN for Non-Vehicle Tags (Optional floating badge) */}
+                          {qr.securityCode && (
+                            <div className="absolute left-[3%] bottom-[3%] bg-amber-100 text-amber-950 font-mono font-black text-[7px] px-1.5 py-0.5 rounded-sm shadow-xs border border-amber-300">
+                              PIN: {qr.securityCode}
+                            </div>
+                          )}
+
+                          {/* Small ID tracker */}
+                          {!qr.securityCode && (
+                            <div className="absolute left-[3%] bottom-[3%] text-[6px] font-mono text-slate-800 font-bold bg-white/60 px-1 py-0.5 rounded backdrop-blur-sm">
+                              ID: {qr.copyCode}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+
+                // 3. 13x19 INCH (3x4 or 3x6 Grid) or A4 / A3 Multi-Sticker Sheet
                 const gridClass =
                   printPaperSize === '13x19_GRID_18'
                     ? 'grid grid-cols-2 sm:grid-cols-3 gap-4 print:grid-cols-3 print:gap-3'
