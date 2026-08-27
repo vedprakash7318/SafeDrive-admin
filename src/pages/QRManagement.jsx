@@ -1289,16 +1289,16 @@ export default function QRManagement() {
                           <div 
                             className="absolute flex items-center justify-center bg-transparent"
                             style={{
-                              left: '54.5%',
-                              top: '7.5%',
-                              width: '41%',
-                              height: '68.7%',
+                              left: '4.85cm',
+                              top: '0.45cm',
+                              width: '3.9cm',
+                              height: '3.9cm',
                             }}
                           >
                             <SafeDriveQRCode
                               value={`${PUBLIC_SCAN_BASE}/${qr.publicToken}`}
                               size={150}
-                              className="w-[95%] h-[95%] object-contain"
+                              className="w-full h-full object-contain"
                               includeMargin={false}
                             />
                           </div>
