@@ -1289,10 +1289,10 @@ export default function QRManagement() {
                           <div 
                             className="absolute flex items-center justify-center bg-transparent"
                             style={{
-                              left: '4.85cm',
-                              top: '0.45cm',
-                              width: '3.9cm',
-                              height: '3.9cm',
+                              left: '55%',
+                              top: '10%',
+                              width: '38%',
+                              height: '63%',
                             }}
                           >
                             <SafeDriveQRCode
