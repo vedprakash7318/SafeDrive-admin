@@ -1287,19 +1287,18 @@ export default function QRManagement() {
                         >
                           {/* QR Code container tightly bound to the white rounded box in the image */}
                           <div 
-                            className="absolute flex items-center justify-center bg-white"
+                            className="absolute flex items-center justify-center bg-transparent"
                             style={{
-                              left: '52.5%',
-                              top: '7%',
-                              width: '44%',
-                              height: '71%',
-                              borderRadius: '8%'
+                              left: '54.5%',
+                              top: '7.5%',
+                              width: '41%',
+                              height: '68.7%',
                             }}
                           >
                             <SafeDriveQRCode
                               value={`${PUBLIC_SCAN_BASE}/${qr.publicToken}`}
                               size={150}
-                              className="max-w-[92%] max-h-[92%] object-contain"
+                              className="w-[95%] h-[95%] object-contain"
                               includeMargin={false}
                             />
                           </div>
