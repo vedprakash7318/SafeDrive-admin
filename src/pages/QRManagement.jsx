@@ -470,60 +470,70 @@ export default function QRManagement() {
                         </td>
 
                         {/* 6. Actions */}
-                        <td className="px-6 py-3.5 text-right space-x-2">
-                          <button
-                            onClick={() => handleOpenEditBatch(g)}
-                            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
-                          >
-                            <Edit className="w-3.5 h-3.5" />
-                            <span>Edit</span>
-                          </button>
-
-                          {((g.soldCount || 0) + (g.activeCount || 0) + (g.suspendedCount || 0)) === 0 && (
-                            <button
-                              onClick={() => handleDeleteBatch(g)}
-                              className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 border border-red-200 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>Delete</span>
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => navigate(`/qr/group/${g.groupName}`)}
-                            className="text-xs bg-[#1D56A5]/10 hover:bg-[#1D56A5] hover:text-white text-[#1D56A5] border border-[#1D56A5]/30 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>View Details</span>
-                          </button>
-
-                          {g.qrType === 'DIGITAL' ? (
-                            <span className="text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg inline-flex items-center space-x-1">
-                              💻 Digital (No Print)
-                            </span>
-                          ) : (
-                            <>
+                        <td className="px-6 py-3.5 align-middle">
+                          <div className="flex flex-col items-end gap-2.5">
+                            
+                            {/* Top Row: Details, Edit, Delete */}
+                            <div className="flex flex-wrap justify-end items-center gap-2">
                               <button
-                                onClick={() => handleTogglePrintStatus(g)}
-                                className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center space-x-1 shadow-2xs ${
-                                  g.isPrinted 
-                                    ? 'bg-[#259A3A]/10 text-[#259A3A] border-[#259A3A]/30 hover:bg-[#259A3A] hover:text-white' 
-                                    : 'bg-amber-50 text-amber-600 border-amber-300 hover:bg-amber-500 hover:text-white'
-                                }`}
+                                onClick={() => navigate(`/qr/group/${g.groupName}`)}
+                                className="text-xs bg-[#1D56A5]/10 hover:bg-[#1D56A5] hover:text-white text-[#1D56A5] border border-[#1D56A5]/30 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
                               >
-                                {g.isPrinted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Printer className="w-3.5 h-3.5" />}
-                                <span>{g.isPrinted ? 'Printed' : 'Not Printed'}</span>
+                                <Eye className="w-3.5 h-3.5" />
+                                <span>View Details</span>
+                              </button>
+                              
+                              <button
+                                onClick={() => handleOpenEditBatch(g)}
+                                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                <span>Edit</span>
                               </button>
 
-                              <button
-                                onClick={() => handlePrintGroup(g)}
-                                className="text-xs bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
-                              >
-                                <Printer className="w-3.5 h-3.5 text-[#1D56A5]" />
-                                <span>Print Sheet</span>
-                              </button>
-                            </>
-                          )}
+                              {((g.soldCount || 0) + (g.activeCount || 0) + (g.suspendedCount || 0)) === 0 && (
+                                <button
+                                  onClick={() => handleDeleteBatch(g)}
+                                  className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 border border-red-200 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                  <span>Delete</span>
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Bottom Row: Print Actions */}
+                            <div className="flex flex-wrap justify-end items-center gap-2">
+                              {g.qrType === 'DIGITAL' ? (
+                                <span className="text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg inline-flex items-center space-x-1">
+                                  💻 Digital (No Print)
+                                </span>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => handleTogglePrintStatus(g)}
+                                    className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center space-x-1 shadow-2xs ${
+                                      g.isPrinted 
+                                        ? 'bg-[#259A3A]/10 text-[#259A3A] border-[#259A3A]/30 hover:bg-[#259A3A] hover:text-white' 
+                                        : 'bg-amber-50 text-amber-600 border-amber-300 hover:bg-amber-500 hover:text-white'
+                                    }`}
+                                  >
+                                    {g.isPrinted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Printer className="w-3.5 h-3.5" />}
+                                    <span>{g.isPrinted ? 'Printed' : 'Not Printed'}</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handlePrintGroup(g)}
+                                    className="text-xs bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
+                                  >
+                                    <Printer className="w-3.5 h-3.5 text-[#1D56A5]" />
+                                    <span>Print Sheet</span>
+                                  </button>
+                                </>
+                              )}
+                            </div>
+
+                          </div>
                         </td>
                       </tr>
                     ))
