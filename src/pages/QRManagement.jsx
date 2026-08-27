@@ -18,7 +18,9 @@ import {
   Layers,
   FolderKanban,
   Tag,
-  Check
+  Check,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { useAuth, API_BASE, PUBLIC_SCAN_BASE } from '../context/AuthContext';
 
@@ -57,6 +59,11 @@ export default function QRManagement() {
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [groupQRs, setGroupQRs] = useState([]);
   const [loadingGroupQRs, setLoadingGroupQRs] = useState(false);
+
+  // Edit Batch Modal
+  const [showEditBatchModal, setShowEditBatchModal] = useState(false);
+  const [editBatchData, setEditBatchData] = useState(null);
+  const [editingBatch, setEditingBatch] = useState(false);
 
   // Print Mode Modal
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -237,6 +244,62 @@ export default function QRManagement() {
     }
   };
 
+  // Open Edit Batch Modal
+  const handleOpenEditBatch = (group) => {
+    setEditBatchData({
+      originalGroupName: group.groupName,
+      groupName: group.groupName,
+      qrFor: group.qrFor || 'Car',
+      qrType: group.qrType || 'PHYSICAL',
+      qrTypeId: group.qrTypeId || ''
+    });
+    setShowEditBatchModal(true);
+  };
+
+  // Handle Edit Batch Submit
+  const handleEditBatchSubmit = async (e) => {
+    e.preventDefault();
+    setEditingBatch(true);
+    try {
+      const payload = {
+        newBatchId: editBatchData.groupName.trim().toUpperCase().replace(/\s+/g, '-'),
+        qrFor: editBatchData.qrFor,
+        qrType: editBatchData.qrType,
+        qrTypeId: editBatchData.qrTypeId
+      };
+      
+      const res = await axios.put(`${API_BASE}/admin/qr/batch/${editBatchData.originalGroupName}`, payload, authHeader);
+      if (res.data.success) {
+        setShowEditBatchModal(false);
+        fetchGroups();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error editing batch');
+    } finally {
+      setEditingBatch(false);
+    }
+  };
+
+  // Handle Delete Batch
+  const handleDeleteBatch = async (group) => {
+    const soldOrActive = (group.soldCount || 0) + (group.activeCount || 0) + (group.suspendedCount || 0);
+    if (soldOrActive > 0) {
+      alert('Cannot delete this batch because it contains sold or active stickers.');
+      return;
+    }
+    
+    if (!confirm(`Are you absolutely sure you want to delete the batch "${group.groupName}"? This action cannot be undone.`)) return;
+    
+    try {
+      const res = await axios.delete(`${API_BASE}/admin/qr/batch/${group.groupName}`, authHeader);
+      if (res.data.success) {
+        fetchGroups();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error deleting batch');
+    }
+  };
+
   // Toggle QR Status (Active / Suspended)
   const handleToggleQRStatus = async (qr) => {
     const nextStatus = qr.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
@@ -408,6 +471,24 @@ export default function QRManagement() {
 
                         {/* 6. Actions */}
                         <td className="px-6 py-3.5 text-right space-x-2">
+                          <button
+                            onClick={() => handleOpenEditBatch(g)}
+                            className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>Edit</span>
+                          </button>
+
+                          {((g.soldCount || 0) + (g.activeCount || 0) + (g.suspendedCount || 0)) === 0 && (
+                            <button
+                              onClick={() => handleDeleteBatch(g)}
+                              className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 border border-red-200 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
+                          )}
+
                           <button
                             onClick={() => navigate(`/qr/group/${g.groupName}`)}
                             className="text-xs bg-[#1D56A5]/10 hover:bg-[#1D56A5] hover:text-white text-[#1D56A5] border border-[#1D56A5]/30 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
@@ -782,6 +863,117 @@ export default function QRManagement() {
                   <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
                   <span>Generate {batchQuantity * currentCopiesPerSet} Stickers ({selectedQRType})</span>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT BATCH MODAL */}
+      {showEditBatchModal && editBatchData && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-50 overflow-hidden animate-in fade-in duration-200">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="flex justify-between items-start p-5 md:p-6 border-b border-slate-100 bg-white shrink-0">
+              <div>
+                <h3 className="font-black text-xl text-slate-900 flex items-center space-x-2">
+                  <Edit className="w-6 h-6 text-[#1D56A5]" />
+                  <span>Edit QR Batch</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Update the group name, QR For category, or QR Type.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowEditBatchModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-2 rounded-xl hover:bg-slate-100 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <form id="editBatchForm" onSubmit={handleEditBatchSubmit} className="p-5 md:p-6 overflow-y-auto flex-1 space-y-6">
+              
+              {/* Batch Name */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Group / Batch Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editBatchData.groupName}
+                  onChange={(e) => setEditBatchData({ ...editBatchData, groupName: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-xs font-mono font-bold uppercase focus:bg-white focus:outline-none focus:border-[#1D56A5]"
+                />
+              </div>
+
+              {/* QR For Category */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  QR For Category *
+                </label>
+                <select
+                  required
+                  value={editBatchData.qrFor}
+                  onChange={(e) => {
+                    const newQrFor = e.target.value;
+                    const newTypeObj = qrTypes.find((t) => t.name === newQrFor);
+                    setEditBatchData({
+                      ...editBatchData,
+                      qrFor: newQrFor,
+                      qrTypeId: newTypeObj?._id || ''
+                    });
+                  }}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm font-bold focus:bg-white focus:outline-none focus:border-[#1D56A5]"
+                >
+                  {qrTypes.map((t) => (
+                    <option key={t._id} value={t.name}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* QR Type (PHYSICAL / DIGITAL) */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  QR Type *
+                </label>
+                <select
+                  required
+                  value={editBatchData.qrType}
+                  onChange={(e) => setEditBatchData({ ...editBatchData, qrType: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm font-bold focus:bg-white focus:outline-none focus:border-[#1D56A5]"
+                >
+                  <option value="PHYSICAL">PHYSICAL</option>
+                  <option value="DIGITAL">DIGITAL</option>
+                </select>
+              </div>
+
+            </form>
+
+            {/* Sticky Footer */}
+            <div className="flex space-x-3 p-4 md:p-5 border-t border-slate-100 bg-slate-50 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowEditBatchModal(false)}
+                className="w-1/3 bg-white border border-slate-200 text-slate-700 font-bold py-2.5 rounded-xl transition text-xs hover:bg-slate-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                form="editBatchForm"
+                disabled={editingBatch}
+                className="w-2/3 bg-[#1D56A5] hover:bg-[#164382] text-white font-bold py-2.5 rounded-xl shadow-md shadow-[#1D56A5]/25 text-xs transition flex items-center justify-center space-x-2 disabled:opacity-50"
+              >
+                {editingBatch ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <span>Save Changes</span>
                 )}
               </button>
             </div>
