@@ -10,14 +10,14 @@ export default function SafeDriveQRCode({
   const logoSize = Math.round(size * 0.28);
 
   return (
-    <div className={`relative inline-flex items-center justify-center p-1.5 bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden ${className}`}>
+    <div className={`relative inline-flex items-center justify-center ${className}`}>
       <QRCodeSVG
         value={value}
         size={size}
         level="H"
         includeMargin={includeMargin}
         imageSettings={{
-          src: '/logo.jpeg',
+          src: '/logo.png',
           x: undefined,
           y: undefined,
           height: logoSize,
