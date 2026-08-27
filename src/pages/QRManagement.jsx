@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import SafeDriveQRCode from '../components/SafeDriveQRCode';
+import DigitalCardModal from '../components/DigitalCardModal';
 import {
   QrCode,
   Plus,
@@ -20,7 +21,8 @@ import {
   Tag,
   Check,
   Edit,
-  Trash2
+  Trash2,
+  Download
 } from 'lucide-react';
 import { useAuth, API_BASE, PUBLIC_SCAN_BASE } from '../context/AuthContext';
 
@@ -58,6 +60,9 @@ export default function QRManagement() {
   // View Group Drawer Modal
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [groupQRs, setGroupQRs] = useState([]);
+
+  // Digital Download State
+  const [downloadDigitalQR, setDownloadDigitalQR] = useState(null);
   const [loadingGroupQRs, setLoadingGroupQRs] = useState(false);
 
   // Edit Batch Modal
@@ -267,7 +272,7 @@ export default function QRManagement() {
         qrType: editBatchData.qrType,
         qrTypeId: editBatchData.qrTypeId
       };
-      
+
       const res = await axios.put(`${API_BASE}/admin/qr/batch/${editBatchData.originalGroupName}`, payload, authHeader);
       if (res.data.success) {
         setShowEditBatchModal(false);
@@ -287,9 +292,9 @@ export default function QRManagement() {
       alert('Cannot delete this batch because it contains sold or active stickers.');
       return;
     }
-    
+
     if (!confirm(`Are you absolutely sure you want to delete the batch "${group.groupName}"? This action cannot be undone.`)) return;
-    
+
     try {
       const res = await axios.delete(`${API_BASE}/admin/qr/batch/${group.groupName}`, authHeader);
       if (res.data.success) {
@@ -361,11 +366,10 @@ export default function QRManagement() {
       <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 w-fit">
         <button
           onClick={() => setActiveTab('GROUPS')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
-            activeTab === 'GROUPS'
-              ? 'bg-[#1D56A5] text-white shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${activeTab === 'GROUPS'
+            ? 'bg-[#1D56A5] text-white shadow-2xs'
+            : 'text-slate-600 hover:text-slate-900'
+            }`}
         >
           <FolderKanban className="w-4 h-4" />
           <span>QR Groups & Batches ({groups.length})</span>
@@ -373,11 +377,10 @@ export default function QRManagement() {
 
         <button
           onClick={() => setActiveTab('ALL_QRS')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
-            activeTab === 'ALL_QRS'
-              ? 'bg-[#1D56A5] text-white shadow-2xs'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${activeTab === 'ALL_QRS'
+            ? 'bg-[#1D56A5] text-white shadow-2xs'
+            : 'text-slate-600 hover:text-slate-900'
+            }`}
         >
           <Layers className="w-4 h-4" />
           <span>All Individual Stickers ({qrs.length})</span>
@@ -472,7 +475,7 @@ export default function QRManagement() {
                         {/* 6. Actions */}
                         <td className="px-6 py-3.5 align-middle">
                           <div className="flex flex-col items-end gap-2.5">
-                            
+
                             {/* Top Row: Details, Edit, Delete */}
                             <div className="flex flex-wrap justify-end items-center gap-2">
                               <button
@@ -482,7 +485,7 @@ export default function QRManagement() {
                                 <Eye className="w-3.5 h-3.5" />
                                 <span>View Details</span>
                               </button>
-                              
+
                               <button
                                 onClick={() => handleOpenEditBatch(g)}
                                 className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
@@ -512,11 +515,10 @@ export default function QRManagement() {
                                 <>
                                   <button
                                     onClick={() => handleTogglePrintStatus(g)}
-                                    className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center space-x-1 shadow-2xs ${
-                                      g.isPrinted 
-                                        ? 'bg-[#259A3A]/10 text-[#259A3A] border-[#259A3A]/30 hover:bg-[#259A3A] hover:text-white' 
-                                        : 'bg-amber-50 text-amber-600 border-amber-300 hover:bg-amber-500 hover:text-white'
-                                    }`}
+                                    className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center space-x-1 shadow-2xs ${g.isPrinted
+                                      ? 'bg-[#259A3A]/10 text-[#259A3A] border-[#259A3A]/30 hover:bg-[#259A3A] hover:text-white'
+                                      : 'bg-amber-50 text-amber-600 border-amber-300 hover:bg-amber-500 hover:text-white'
+                                      }`}
                                   >
                                     {g.isPrinted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Printer className="w-3.5 h-3.5" />}
                                     <span>{g.isPrinted ? 'Printed' : 'Not Printed'}</span>
@@ -579,11 +581,10 @@ export default function QRManagement() {
                   <button
                     key={st}
                     onClick={() => setQrFilter(st)}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition whitespace-nowrap ${
-                      qrFilter === st
-                        ? 'bg-[#1D56A5] text-white shadow-2xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition whitespace-nowrap ${qrFilter === st
+                      ? 'bg-[#1D56A5] text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                      }`}
                   >
                     {st}
                   </button>
@@ -631,15 +632,14 @@ export default function QRManagement() {
 
                         <td className="px-6 py-3.5">
                           <span
-                            className={`inline-flex items-center space-x-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                              qr.status === 'ACTIVE'
-                                ? 'bg-emerald-50 text-[#259A3A] border border-[#259A3A]/30'
-                                : qr.status === 'IN STOCK'
+                            className={`inline-flex items-center space-x-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${qr.status === 'ACTIVE'
+                              ? 'bg-emerald-50 text-[#259A3A] border border-[#259A3A]/30'
+                              : qr.status === 'IN STOCK'
                                 ? 'bg-blue-50 text-[#1D56A5] border border-[#1D56A5]/30'
                                 : qr.status === 'SOLD'
-                                ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                : 'bg-red-50 text-[#E94E1A] border border-[#E94E1A]/30'
-                            }`}
+                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                  : 'bg-red-50 text-[#E94E1A] border border-[#E94E1A]/30'
+                              }`}
                           >
                             <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
                             <span>{qr.status}</span>
@@ -665,13 +665,22 @@ export default function QRManagement() {
                             <span>View</span>
                           </Link>
 
+                          {qr.qrFormat === 'DIGITAL' && (
+                            <button
+                              onClick={() => setDownloadDigitalQR(qr)}
+                              className="text-xs bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Download</span>
+                            </button>
+                          )}
+
                           <button
                             onClick={() => handleToggleQRStatus(qr)}
-                            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center space-x-1 ${
-                              qr.status === 'SUSPENDED'
-                                ? 'bg-[#259A3A]/10 hover:bg-[#259A3A] hover:text-white text-[#259A3A] border-[#259A3A]/30'
-                                : 'bg-[#E94E1A]/10 hover:bg-[#E94E1A] hover:text-white text-[#E94E1A] border-[#E94E1A]/30'
-                            }`}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center space-x-1 ${qr.status === 'SUSPENDED'
+                              ? 'bg-[#259A3A]/10 hover:bg-[#259A3A] hover:text-white text-[#259A3A] border-[#259A3A]/30'
+                              : 'bg-[#E94E1A]/10 hover:bg-[#E94E1A] hover:text-white text-[#E94E1A] border-[#E94E1A]/30'
+                              }`}
                           >
                             <span>{qr.status === 'SUSPENDED' ? 'Activate' : 'Suspend'}</span>
                           </button>
@@ -780,15 +789,13 @@ export default function QRManagement() {
                   <button
                     type="button"
                     onClick={() => setSelectedQRFormat('PHYSICAL')}
-                    className={`p-3.5 rounded-2xl border text-left transition flex items-center space-x-3 ${
-                      selectedQRFormat === 'PHYSICAL'
-                        ? 'bg-amber-50/80 border-amber-400 text-amber-950 ring-2 ring-amber-400/20 shadow-xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
+                    className={`p-3.5 rounded-2xl border text-left transition flex items-center space-x-3 ${selectedQRFormat === 'PHYSICAL'
+                      ? 'bg-amber-50/80 border-amber-400 text-amber-950 ring-2 ring-amber-400/20 shadow-xs'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
                   >
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                      selectedQRFormat === 'PHYSICAL' ? 'border-amber-600 bg-amber-600' : 'border-slate-300'
-                    }`}>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedQRFormat === 'PHYSICAL' ? 'border-amber-600 bg-amber-600' : 'border-slate-300'
+                      }`}>
                       {selectedQRFormat === 'PHYSICAL' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
                     <div>
@@ -800,15 +807,13 @@ export default function QRManagement() {
                   <button
                     type="button"
                     onClick={() => setSelectedQRFormat('DIGITAL')}
-                    className={`p-3.5 rounded-2xl border text-left transition flex items-center space-x-3 ${
-                      selectedQRFormat === 'DIGITAL'
-                        ? 'bg-indigo-50/80 border-indigo-400 text-indigo-950 ring-2 ring-indigo-400/20 shadow-xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
+                    className={`p-3.5 rounded-2xl border text-left transition flex items-center space-x-3 ${selectedQRFormat === 'DIGITAL'
+                      ? 'bg-indigo-50/80 border-indigo-400 text-indigo-950 ring-2 ring-indigo-400/20 shadow-xs'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
                   >
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                      selectedQRFormat === 'DIGITAL' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
-                    }`}>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedQRFormat === 'DIGITAL' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
+                      }`}>
                       {selectedQRFormat === 'DIGITAL' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
                     <div>
@@ -905,7 +910,7 @@ export default function QRManagement() {
 
             {/* Scrollable Body */}
             <form id="editBatchForm" onSubmit={handleEditBatchSubmit} className="p-5 md:p-6 overflow-y-auto flex-1 space-y-6">
-              
+
               {/* Batch Name */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
@@ -1044,13 +1049,12 @@ export default function QRManagement() {
                         </td>
                         <td className="px-4 py-2.5">
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              qr.status === 'ACTIVE'
-                                ? 'bg-emerald-50 text-[#259A3A]'
-                                : qr.status === 'IN STOCK'
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${qr.status === 'ACTIVE'
+                              ? 'bg-emerald-50 text-[#259A3A]'
+                              : qr.status === 'IN STOCK'
                                 ? 'bg-blue-50 text-[#1D56A5]'
                                 : 'bg-amber-50 text-amber-700'
-                            }`}
+                              }`}
                           >
                             {qr.status}
                           </span>
@@ -1111,13 +1115,12 @@ export default function QRManagement() {
                 break-after: page;
                 page-break-after: always;
               }
-              ${
-                printPaperSize === '13x19_SINGLE' || printPaperSize === '13x19_GRID_12' || printPaperSize === '13x19_GRID_18'
-                  ? '@page { size: 13in 19in portrait; margin: 0.35in; }'
-                  : printPaperSize === 'A3_GRID_8'
-                  ? '@page { size: A3 portrait; margin: 10mm; }'
-                  : '@page { size: A4 portrait; margin: 8mm; }'
-              }
+              ${printPaperSize === '13x19_SINGLE' || printPaperSize === '13x19_GRID_12' || printPaperSize === '13x19_GRID_18'
+              ? '@page { size: 13in 19in portrait; margin: 0.35in; }'
+              : printPaperSize === 'A3_GRID_8'
+                ? '@page { size: A3 portrait; margin: 10mm; }'
+                : '@page { size: A4 portrait; margin: 8mm; }'
+            }
             }
           `}</style>
 
@@ -1209,9 +1212,8 @@ export default function QRManagement() {
                       {displayItems.map((qr, idx) => (
                         <div
                           key={qr._id}
-                          className={`border-4 border-dashed border-[#1D56A5] rounded-3xl p-8 sm:p-12 flex flex-col items-center justify-center text-center bg-white min-h-[500px] md:min-h-[680px] print:min-h-[16in] print-no-break ${
-                            idx < displayItems.length - 1 ? 'print-page-break' : ''
-                          }`}
+                          className={`border-4 border-dashed border-[#1D56A5] rounded-3xl p-8 sm:p-12 flex flex-col items-center justify-center text-center bg-white min-h-[500px] md:min-h-[680px] print:min-h-[16in] print-no-break ${idx < displayItems.length - 1 ? 'print-page-break' : ''
+                            }`}
                         >
                           {/* Cut Guide Line */}
                           <div className="w-full flex justify-between text-[11px] font-mono text-slate-400 mb-6 print:mb-8 border-b border-dashed border-slate-300 pb-2">
@@ -1286,13 +1288,14 @@ export default function QRManagement() {
                           }}
                         >
                           {/* QR Code container tightly bound to the white rounded box in the image */}
-                          <div 
+                          <div
                             className="absolute flex items-center justify-center bg-transparent"
                             style={{
-                              left: '55%',
-                              top: '10%',
-                              width: '38%',
-                              height: '63%',
+                              left: '58%',
+                              top: '9%',
+                              width: '37%',
+                              height: '60%',
+                              // borderRadius: '18px'
                             }}
                           >
                             <SafeDriveQRCode
@@ -1327,10 +1330,10 @@ export default function QRManagement() {
                   printPaperSize === '13x19_GRID_18'
                     ? 'grid grid-cols-2 sm:grid-cols-3 gap-4 print:grid-cols-3 print:gap-3'
                     : printPaperSize === '13x19_GRID_12'
-                    ? 'grid grid-cols-2 sm:grid-cols-3 gap-5 print:grid-cols-3 print:gap-4'
-                    : printPaperSize === 'A3_GRID_8'
-                    ? 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 print:grid-cols-2 print:gap-4'
-                    : 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 print:grid-cols-2 print:gap-3';
+                      ? 'grid grid-cols-2 sm:grid-cols-3 gap-5 print:grid-cols-3 print:gap-4'
+                      : printPaperSize === 'A3_GRID_8'
+                        ? 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 print:grid-cols-2 print:gap-4'
+                        : 'grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-4 print:grid-cols-2 print:gap-3';
 
                 return (
                   <div className={gridClass}>
@@ -1385,6 +1388,15 @@ export default function QRManagement() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* 8. DIGITAL CARD DOWNLOAD MODAL */}
+      {downloadDigitalQR && (
+        <DigitalCardModal 
+          qr={downloadDigitalQR} 
+          onClose={() => setDownloadDigitalQR(null)} 
+          PUBLIC_SCAN_BASE={PUBLIC_SCAN_BASE} 
+        />
       )}
     </div>
   );
