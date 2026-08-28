@@ -1323,13 +1323,12 @@ export default function QRManagement() {
                         >
                           {/* QR Code container tightly bound to the white rounded box in the image */}
                           <div
-                            className="absolute flex items-center justify-center bg-transparent"
+                            className="absolute flex flex-col items-center justify-center bg-transparent z-10"
                             style={{
                               left: '58%',
                               top: '9%',
                               width: '37%',
-                              height: '60%',
-                              // borderRadius: '18px'
+                              height: '66%',
                             }}
                           >
                             <SafeDriveQRCode
@@ -1338,21 +1337,17 @@ export default function QRManagement() {
                               className="w-full h-full object-contain"
                               includeMargin={false}
                             />
+                            {/* Optional ID or PIN directly below QR code */}
+                            {qr.securityCode ? (
+                              <div className="mt-0.5 bg-amber-100 text-amber-950 font-mono font-black text-[6px] px-1 py-px rounded-sm shadow-xs border border-amber-300">
+                                PIN: {qr.securityCode}
+                              </div>
+                            ) : (
+                              <div className="mt-0.5 text-[6.5px] font-mono text-slate-800 font-bold bg-white px-1 py-px rounded-sm border border-slate-300">
+                                ID: {qr.copyCode}
+                              </div>
+                            )}
                           </div>
-
-                          {/* 4-Digit Security PIN for Non-Vehicle Tags (Optional floating badge) */}
-                          {qr.securityCode && (
-                            <div className="absolute left-[3%] bottom-[3%] bg-amber-100 text-amber-950 font-mono font-black text-[7px] px-1.5 py-0.5 rounded-sm shadow-xs border border-amber-300">
-                              PIN: {qr.securityCode}
-                            </div>
-                          )}
-
-                          {/* Small ID tracker */}
-                          {!qr.securityCode && (
-                            <div className="absolute left-[3%] bottom-[3%] text-[6px] font-mono text-slate-800 font-bold bg-white/60 px-1 py-0.5 rounded backdrop-blur-sm">
-                              ID: {qr.copyCode}
-                            </div>
-                          )}
                         </div>
                       ))}
                     </div>

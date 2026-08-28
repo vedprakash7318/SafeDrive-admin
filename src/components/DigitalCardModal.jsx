@@ -17,7 +17,7 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
         useCORS: true,
         backgroundColor: null
       });
-      
+
       const image = canvas.toDataURL('image/png', 1.0);
       const link = document.createElement('a');
       link.download = `SafeDrive_DigitalCard_${qr.copyCode}.png`;
@@ -55,10 +55,10 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
 
         {/* Body / Preview Area */}
         <div className="p-6 md:p-10 flex-1 overflow-y-auto flex items-center justify-center bg-slate-50">
-          
+
           {/* Card Container - using a fixed ratio mimicking the physical card proportions */}
           {/* We use a relatively large pixel size here so the preview is clear and download is high-res */}
-          <div 
+          <div
             ref={cardRef}
             className="relative overflow-hidden bg-white shadow-sm border border-slate-200 rounded-lg"
             style={{
@@ -67,21 +67,21 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
             }}
           >
             {/* Background Image forced via img tag for html2canvas support */}
-            <img 
-              src="/card_bg.png" 
-              alt="Card Background" 
-              className="absolute inset-0 w-full h-full object-fill z-0" 
+            <img
+              src="/card_bg.png"
+              alt="Card Background"
+              className="absolute inset-0 w-full h-full object-fill z-0"
               crossOrigin="anonymous"
             />
 
             {/* QR Code Container based on percentages */}
-            <div 
+            <div
               className="absolute flex items-center justify-center bg-transparent z-10"
               style={{
-                left: '55%',
-                top: '10%',
-                width: '38%',
-                height: '63%',
+                left: '59%',
+                top: '4%',
+                width: '35%',
+                height: '66%',
               }}
             >
               <SafeDriveQRCode
