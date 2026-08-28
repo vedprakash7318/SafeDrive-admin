@@ -82,6 +82,7 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
                 top: '11%',
                 width: '33%',
                 height: '55%',
+
               }}
             >
               <SafeDriveQRCode
