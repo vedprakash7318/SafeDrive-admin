@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { X, Download, Loader2 } from 'lucide-react';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import SafeDriveQRCode from './SafeDriveQRCode';
 
 export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
@@ -11,17 +11,15 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
     if (!cardRef.current) return;
     try {
       setDownloading(true);
-      // Temporarily scale up for high-res download if needed, or just let html2canvas handle it
-      const canvas = await html2canvas(cardRef.current, {
-        scale: 4, // 4x scale for high resolution print quality
-        useCORS: true,
-        backgroundColor: null
+      const dataUrl = await toPng(cardRef.current, {
+        pixelRatio: 4, // 4x scale for high resolution print quality
+        skipFonts: false,
+        cacheBust: true,
       });
-
-      const image = canvas.toDataURL('image/png', 1.0);
+      
       const link = document.createElement('a');
       link.download = `SafeDrive_DigitalCard_${qr.copyCode}.png`;
-      link.href = image;
+      link.href = dataUrl;
       link.click();
     } catch (error) {
       console.error('Error generating card image:', error);
