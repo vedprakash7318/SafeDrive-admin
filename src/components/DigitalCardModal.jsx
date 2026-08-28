@@ -65,6 +65,7 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
               width: '600px',
               height: '358px', // approx 9.2:5.49 ratio
               backgroundColor: '#ffffff',
+              color: '#000000', // Explicitly prevent inheriting oklch body text color
               border: '1px solid #e2e8f0',
             }}
           >
@@ -77,7 +78,7 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
 
             {/* QR Code container tightly bound to the white rounded box in the image */}
             <div
-              className="absolute flex items-center justify-center bg-transparent z-10"
+              className="absolute flex items-center justify-center z-10"
               style={{
                 left: '59%',
                 top: '4%',
