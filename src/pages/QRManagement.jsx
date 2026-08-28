@@ -666,7 +666,7 @@ export default function QRManagement() {
                             <span>View</span>
                           </Link>
 
-                          {qr.qrFormat === 'DIGITAL' && (
+                          {qr.qrType === 'DIGITAL' && (
                             <button
                               onClick={() => setDownloadDigitalQR(qr)}
                               className="text-xs bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
