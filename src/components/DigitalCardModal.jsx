@@ -52,7 +52,7 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
         </div>
 
         {/* Body / Preview Area */}
-        <div className="p-6 md:p-10 flex-1 overflow-y-auto flex items-center justify-center bg-slate-50">
+        <div className="p-4 md:p-10 flex-1 overflow-auto flex items-center md:justify-center bg-slate-50">
 
           {/* Card Container - using a fixed ratio mimicking the physical card proportions */}
           {/* We use a relatively large pixel size here so the preview is clear and download is high-res */}
@@ -62,6 +62,9 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
             style={{
               width: '600px',
               height: '358px', // approx 9.2:5.49 ratio
+              minWidth: '600px',
+              minHeight: '358px',
+              flexShrink: 0,
               backgroundColor: '#ffffff',
               color: '#000000', // Explicitly prevent inheriting oklch body text color
               border: '1px solid #e2e8f0',
