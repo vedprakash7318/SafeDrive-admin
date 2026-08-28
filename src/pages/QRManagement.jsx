@@ -1339,11 +1339,11 @@ export default function QRManagement() {
                             />
                             {/* Optional ID or PIN directly below QR code */}
                             {qr.securityCode ? (
-                              <div className="mt-0.5 bg-amber-100 text-amber-950 font-mono font-black text-[6px] px-1 py-px rounded-sm shadow-xs border border-amber-300">
+                              <div className="mt-0.5 bg-amber-500 text-white font-mono font-black text-[7px] px-1.5 py-0.5 rounded-sm shadow-xs border border-white">
                                 PIN: {qr.securityCode}
                               </div>
                             ) : (
-                              <div className="mt-0.5 text-[6.5px] font-mono text-slate-800 font-bold bg-white px-1 py-px rounded-sm border border-slate-300">
+                              <div className="mt-0.5 text-[7px] font-mono text-white font-bold bg-emerald-600 px-1.5 py-0.5 rounded-sm border border-white">
                                 ID: {qr.copyCode}
                               </div>
                             )}

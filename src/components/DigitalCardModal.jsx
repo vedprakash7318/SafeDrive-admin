@@ -93,11 +93,11 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
               />
               {/* Optional ID or PIN directly below QR code */}
               {qr.securityCode ? (
-                <div className="-mt-1 bg-amber-100 text-amber-950 font-mono font-black text-xs px-2 py-0.5 rounded shadow-xs border border-amber-300 z-10">
+                <div className="-mt-1 bg-amber-500 text-white font-mono font-black text-xs px-2 py-0.5 rounded shadow-md border-2 border-white z-10">
                   PIN: {qr.securityCode}
                 </div>
               ) : (
-                <div className="-mt-1 text-[10px] font-mono text-slate-800 font-bold bg-white px-2 py-0.5 rounded border border-slate-300 z-10">
+                <div className="-mt-1 text-xs font-mono text-white font-bold bg-emerald-600 px-2 py-0.5 rounded shadow-md border-2 border-white z-10">
                   ID: {qr.copyCode}
                 </div>
               )}
