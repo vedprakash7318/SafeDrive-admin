@@ -74,7 +74,7 @@ export default function QRManagement() {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [printItems, setPrintItems] = useState([]);
   const [printTitle, setPrintTitle] = useState('');
-  const [printPaperSize, setPrintPaperSize] = useState('13x19_SINGLE');
+  const [printPaperSize, setPrintPaperSize] = useState('A3_CARD_21');
   const [selectedSingleQRId, setSelectedSingleQRId] = useState('ALL');
   const [showCutMarks, setShowCutMarks] = useState(true);
 
@@ -1149,11 +1149,6 @@ export default function QRManagement() {
                     onChange={(e) => setPrintPaperSize(e.target.value)}
                     className="bg-slate-50 border-2 border-[#1D56A5] text-slate-900 font-bold text-xs rounded-xl px-3 py-2 focus:outline-none shadow-2xs"
                   >
-                    <option value="13x19_SINGLE">📐 13×19 Inch (330×483 mm) — 1 Large QR per Page</option>
-                    <option value="13x19_GRID_12">📑 13×19 Inch (330×483 mm) — 12 Stickers (3×4 Grid)</option>
-                    <option value="13x19_GRID_18">📑 13×19 Inch (330×483 mm) — 18 Stickers (3×6 Density)</option>
-                    <option value="A4_GRID_6">📄 A4 Sheet (210×297 mm) — 6 Stickers (2×3 Grid)</option>
-                    <option value="A3_GRID_8">📄 A3 Sheet (297×420 mm) — 8 Stickers (2×4 Grid)</option>
                     <option value="A3_CARD_21">💳 Standard Card (9.2×5.49 cm) — A3 Sheet (21 Cards, 3×7 Grid)</option>
                   </select>
                 </div>
