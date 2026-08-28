@@ -60,10 +60,12 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
           {/* We use a relatively large pixel size here so the preview is clear and download is high-res */}
           <div
             ref={cardRef}
-            className="relative overflow-hidden bg-white shadow-sm border border-slate-200 rounded-lg"
+            className="relative overflow-hidden rounded-lg"
             style={{
               width: '600px',
               height: '358px', // approx 9.2:5.49 ratio
+              backgroundColor: '#ffffff',
+              border: '1px solid #e2e8f0',
             }}
           >
             {/* Background Image forced via img tag for html2canvas support */}
@@ -93,11 +95,17 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
               {/* ID or PIN Badge explicitly pinned to bottom center of this box */}
               <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
                 {qr.securityCode ? (
-                  <div className="bg-[#259A3A] text-white font-mono font-black text-xs px-2 py-0.5 rounded shadow-sm border border-[#259A3A]/50 whitespace-nowrap">
+                  <div 
+                    className="font-mono font-black text-xs px-2 py-0.5 rounded whitespace-nowrap"
+                    style={{ backgroundColor: '#259A3A', color: '#ffffff', border: '1px solid rgba(37, 154, 58, 0.5)' }}
+                  >
                     PIN: {qr.securityCode}
                   </div>
                 ) : (
-                  <div className="bg-[#259A3A] text-white font-mono font-black text-xs px-2 py-0.5 rounded shadow-sm border border-[#259A3A]/50 whitespace-nowrap">
+                  <div 
+                    className="font-mono font-black text-xs px-2 py-0.5 rounded whitespace-nowrap"
+                    style={{ backgroundColor: '#259A3A', color: '#ffffff', border: '1px solid rgba(37, 154, 58, 0.5)' }}
+                  >
                     ID: {qr.copyCode}
                   </div>
                 )}
