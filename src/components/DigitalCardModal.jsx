@@ -64,14 +64,19 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
             style={{
               width: '600px',
               height: '358px', // approx 9.2:5.49 ratio
-              backgroundImage: `url('/card_bg.png')`,
-              backgroundSize: '100% 100%',
-              backgroundRepeat: 'no-repeat',
             }}
           >
+            {/* Background Image forced via img tag for html2canvas support */}
+            <img 
+              src="/card_bg.png" 
+              alt="Card Background" 
+              className="absolute inset-0 w-full h-full object-fill z-0" 
+              crossOrigin="anonymous"
+            />
+
             {/* QR Code Container based on percentages */}
             <div 
-              className="absolute flex items-center justify-center bg-transparent"
+              className="absolute flex items-center justify-center bg-transparent z-10"
               style={{
                 left: '55%',
                 top: '10%',
@@ -89,11 +94,11 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
 
             {/* Optional ID or PIN */}
             {qr.securityCode ? (
-              <div className="absolute left-[4%] bottom-[4%] bg-amber-100 text-amber-950 font-mono font-black text-xs px-2 py-1 rounded shadow-xs border border-amber-300">
+              <div className="absolute left-[4%] bottom-[4%] bg-amber-100 text-amber-950 font-mono font-black text-xs px-2 py-1 rounded shadow-xs border border-amber-300 z-10">
                 PIN: {qr.securityCode}
               </div>
             ) : (
-              <div className="absolute left-[4%] bottom-[4%] text-[9px] font-mono text-slate-800 font-bold bg-white/60 px-2 py-1 rounded backdrop-blur-sm">
+              <div className="absolute left-[4%] bottom-[4%] text-[9px] font-mono text-slate-800 font-bold bg-white/60 px-2 py-1 rounded backdrop-blur-sm z-10">
                 ID: {qr.copyCode}
               </div>
             )}
