@@ -1,5 +1,5 @@
 import React from 'react';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 
 export default function SafeDriveQRCode({
   value,
@@ -11,7 +11,7 @@ export default function SafeDriveQRCode({
 
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
-      <QRCodeSVG
+      <QRCodeCanvas
         value={value}
         size={size}
         level="H"
