@@ -71,18 +71,16 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
               src="/card_bg.png"
               alt="Card Background"
               className="absolute inset-0 w-full h-full object-fill z-0"
-              crossOrigin="anonymous"
             />
 
             {/* QR Code container tightly bound to the white rounded box in the image */}
             <div
-              className="absolute flex flex-col items-center justify-center bg-transparent z-10"
+              className="absolute flex items-center justify-center bg-transparent z-10"
               style={{
-                left: '60%',
-                top: '11%',
-                width: '33%',
-                height: '55%',
-
+                left: '59%',
+                top: '4%',
+                width: '35%',
+                height: '66%',
               }}
             >
               <SafeDriveQRCode
@@ -91,16 +89,19 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
                 className="w-full h-full object-contain"
                 includeMargin={false}
               />
-              {/* Optional ID or PIN directly below QR code */}
-              {qr.securityCode ? (
-                <div className="-mt-1 bg-amber-500 text-white font-mono font-black text-xs px-2 py-0.5 rounded shadow-md border-2 border-white z-10">
-                  PIN: {qr.securityCode}
-                </div>
-              ) : (
-                <div className="-mt-1 text-xs font-mono text-white font-bold bg-emerald-600 px-2 py-0.5 rounded shadow-md border-2 border-white z-10">
-                  ID: {qr.copyCode}
-                </div>
-              )}
+              
+              {/* ID or PIN Badge explicitly pinned to bottom center of this box */}
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+                {qr.securityCode ? (
+                  <div className="bg-[#259A3A] text-white font-mono font-black text-xs px-2 py-0.5 rounded shadow-sm border border-[#259A3A]/50 whitespace-nowrap">
+                    PIN: {qr.securityCode}
+                  </div>
+                ) : (
+                  <div className="bg-[#259A3A] text-white font-mono font-black text-xs px-2 py-0.5 rounded shadow-sm border border-[#259A3A]/50 whitespace-nowrap">
+                    ID: {qr.copyCode}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

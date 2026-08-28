@@ -1323,12 +1323,12 @@ export default function QRManagement() {
                         >
                           {/* QR Code container tightly bound to the white rounded box in the image */}
                           <div
-                            className="absolute flex flex-col items-center justify-center bg-transparent z-10"
+                            className="absolute flex items-center justify-center bg-transparent z-10"
                             style={{
-                              left: '60%',
-                              top: '11%',
-                              width: '33%',
-                              height: '55%',
+                              left: '58%',
+                              top: '9%',
+                              width: '37%',
+                              height: '66%',
                             }}
                           >
                             <SafeDriveQRCode
@@ -1337,16 +1337,19 @@ export default function QRManagement() {
                               className="w-full h-full object-contain"
                               includeMargin={false}
                             />
-                            {/* Optional ID or PIN directly below QR code */}
-                            {qr.securityCode ? (
-                              <div className="mt-0.5 bg-amber-500 text-white font-mono font-black text-[7px] px-1.5 py-0.5 rounded-sm shadow-xs border border-white">
-                                PIN: {qr.securityCode}
-                              </div>
-                            ) : (
-                              <div className="mt-0.5 text-[7px] font-mono text-white font-bold bg-emerald-600 px-1.5 py-0.5 rounded-sm border border-white">
-                                ID: {qr.copyCode}
-                              </div>
-                            )}
+                            
+                            {/* ID or PIN Badge explicitly pinned to bottom center of this box */}
+                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
+                              {qr.securityCode ? (
+                                <div className="bg-[#259A3A] text-white font-mono font-black text-[7px] px-1.5 py-0.5 rounded-sm shadow-xs border border-[#259A3A]/50 whitespace-nowrap">
+                                  PIN: {qr.securityCode}
+                                </div>
+                              ) : (
+                                <div className="bg-[#259A3A] text-white font-mono font-black text-[7px] px-1.5 py-0.5 rounded-sm shadow-xs border border-[#259A3A]/50 whitespace-nowrap">
+                                  ID: {qr.copyCode}
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
