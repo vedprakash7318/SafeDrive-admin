@@ -75,7 +75,7 @@ export default function QRManagement() {
   const [printItems, setPrintItems] = useState([]);
   const [printTitle, setPrintTitle] = useState('');
   const [printPaperSize, setPrintPaperSize] = useState('A3_CARD_21');
-  const [selectedSingleQRId, setSelectedSingleQRId] = useState('ALL');
+  const [selectedQRIds, setSelectedQRIds] = useState([]);
   const [showCutMarks, setShowCutMarks] = useState(true);
 
   const fetchTags = async () => {
@@ -1097,6 +1097,8 @@ export default function QRManagement() {
               }
               #printable-area, #printable-area * {
                 visibility: visible;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
               }
               #printable-area {
                 position: absolute;
@@ -1156,12 +1158,26 @@ export default function QRManagement() {
                 {/* 2. Filter Single QR (Optional) */}
                 <div className="flex flex-col">
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                    Select Sticker
+                    Select Sticker(s)
                   </label>
                   <select
-                    value={selectedSingleQRId}
-                    onChange={(e) => setSelectedSingleQRId(e.target.value)}
-                    className="bg-slate-50 border border-slate-200 text-slate-900 font-bold text-xs rounded-xl px-3 py-2 focus:outline-none"
+                    multiple
+                    value={selectedQRIds}
+                    onChange={(e) => {
+                      const options = e.target.options;
+                      const selected = [];
+                      for (let i = 0; i < options.length; i++) {
+                        if (options[i].selected) {
+                          selected.push(options[i].value);
+                        }
+                      }
+                      if (selected.includes('ALL')) {
+                        setSelectedQRIds([]);
+                      } else {
+                        setSelectedQRIds(selected);
+                      }
+                    }}
+                    className="bg-slate-50 border border-slate-200 text-slate-900 font-bold text-xs rounded-xl px-3 py-2 focus:outline-none min-h-[140px]"
                   >
                     <option value="ALL">Print All ({printItems.length} Stickers)</option>
                     {printItems.map((qr) => (
@@ -1196,9 +1212,9 @@ export default function QRManagement() {
               {/* Filtered items */}
               {(() => {
                 const displayItems =
-                  selectedSingleQRId === 'ALL'
+                  selectedQRIds.length === 0
                     ? printItems
-                    : printItems.filter((q) => q._id === selectedSingleQRId);
+                    : printItems.filter((q) => selectedQRIds.includes(q._id));
 
                 // 1. SINGLE LARGE 13x19 INCH POSTER / MASTER LAYOUT
                 if (printPaperSize === '13x19_SINGLE') {
