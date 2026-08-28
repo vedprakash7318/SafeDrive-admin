@@ -1151,7 +1151,12 @@ export default function QRManagement() {
                     onChange={(e) => setPrintPaperSize(e.target.value)}
                     className="bg-slate-50 border-2 border-[#1D56A5] text-slate-900 font-bold text-xs rounded-xl px-3 py-2 focus:outline-none shadow-2xs"
                   >
-                    <option value="A3_CARD_21">💳 Standard Card (9.2×5.49 cm) — A3 Sheet (21 Cards, 3×7 Grid)</option>
+                    <option value="A3_CARD_21">💳 Standard Card (9.2×5.49 cm) — A3 Sheet (21 Cards)</option>
+                    <option value="13x19_SINGLE">📐 13×19 Inch (330×483 mm) — 1 Large QR</option>
+                    <option value="13x19_GRID_12">📑 13×19 Inch (330×483 mm) — 12 Stickers (3×4)</option>
+                    <option value="13x19_GRID_18">📑 13×19 Inch (330×483 mm) — 18 Stickers (3×6)</option>
+                    <option value="A4_GRID_6">📄 A4 Sheet (210×297 mm) — 6 Stickers (2×3)</option>
+                    <option value="A3_GRID_8">📄 A3 Sheet (297×420 mm) — 8 Stickers (2×4)</option>
                   </select>
                 </div>
 
@@ -1160,32 +1165,36 @@ export default function QRManagement() {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Select Sticker(s)
                   </label>
-                  <select
-                    multiple
-                    value={selectedQRIds}
-                    onChange={(e) => {
-                      const options = e.target.options;
-                      const selected = [];
-                      for (let i = 0; i < options.length; i++) {
-                        if (options[i].selected) {
-                          selected.push(options[i].value);
-                        }
-                      }
-                      if (selected.includes('ALL')) {
-                        setSelectedQRIds([]);
-                      } else {
-                        setSelectedQRIds(selected);
-                      }
-                    }}
-                    className="bg-slate-50 border border-slate-200 text-slate-900 font-bold text-xs rounded-xl px-3 py-2 focus:outline-none min-h-[140px]"
-                  >
-                    <option value="ALL">Print All ({printItems.length} Stickers)</option>
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 max-h-[120px] overflow-y-auto w-56 shadow-inner flex flex-col space-y-0.5">
+                    <label className="flex items-center space-x-2 px-2 py-1.5 hover:bg-slate-200 rounded cursor-pointer border-b border-slate-200 mb-1 sticky top-0 bg-slate-50 z-10 transition">
+                      <input 
+                        type="checkbox" 
+                        checked={selectedQRIds.length === 0}
+                        onChange={(e) => {
+                          if (e.target.checked) setSelectedQRIds([]);
+                        }}
+                        className="w-3.5 h-3.5 accent-[#1D56A5] cursor-pointer"
+                      />
+                      <span className="text-xs font-black text-slate-800">Print All ({printItems.length})</span>
+                    </label>
                     {printItems.map((qr) => (
-                      <option key={qr._id} value={qr._id}>
-                        {qr.copyCode} ({qr.qrType})
-                      </option>
+                      <label key={qr._id} className="flex items-center space-x-2 px-2 py-1 hover:bg-slate-100 rounded cursor-pointer transition">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedQRIds.includes(qr._id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedQRIds([...selectedQRIds, qr._id]);
+                            } else {
+                              setSelectedQRIds(selectedQRIds.filter(id => id !== qr._id));
+                            }
+                          }}
+                          className="w-3.5 h-3.5 accent-[#1D56A5] cursor-pointer"
+                        />
+                        <span className="text-[11px] font-semibold text-slate-700">{qr.copyCode}</span>
+                      </label>
                     ))}
-                  </select>
+                  </div>
                 </div>
 
                 {/* Action Buttons */}
@@ -1289,7 +1298,7 @@ export default function QRManagement() {
                       {displayItems.map((qr) => (
                         <div
                           key={qr._id}
-                          className="relative print-no-break overflow-hidden shadow-sm border border-slate-200 print:border-none print:shadow-none"
+                          className="relative print-no-break overflow-hidden shadow-sm border border-slate-200 print:border print:border-dashed print:border-slate-400 print:shadow-none"
                           style={{
                             width: '9.2cm',
                             height: '5.49cm',
