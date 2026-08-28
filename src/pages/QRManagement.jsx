@@ -1180,8 +1180,8 @@ export default function QRManagement() {
                   {showStickerDropdown && (
                     <div className="absolute top-[100%] left-0 mt-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 max-h-[200px] overflow-y-auto w-56 shadow-2xl flex flex-col space-y-0.5 z-50">
                       <label className="flex items-center space-x-2 px-2 py-1.5 hover:bg-slate-200 rounded cursor-pointer border-b border-slate-200 mb-1 sticky top-0 bg-slate-50 z-10 transition">
-                        <input 
-                          type="checkbox" 
+                        <input
+                          type="checkbox"
                           checked={selectedQRIds.length === 0}
                           onChange={(e) => {
                             if (e.target.checked) setSelectedQRIds([]);
@@ -1192,8 +1192,8 @@ export default function QRManagement() {
                       </label>
                       {printItems.map((qr) => (
                         <label key={qr._id} className="flex items-center space-x-2 px-2 py-1 hover:bg-slate-100 rounded cursor-pointer transition">
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={selectedQRIds.includes(qr._id)}
                             onChange={(e) => {
                               if (e.target.checked) {
@@ -1421,10 +1421,10 @@ export default function QRManagement() {
 
       {/* 8. DIGITAL CARD DOWNLOAD MODAL */}
       {downloadDigitalQR && (
-        <DigitalCardModal 
-          qr={downloadDigitalQR} 
-          onClose={() => setDownloadDigitalQR(null)} 
-          PUBLIC_SCAN_BASE={PUBLIC_SCAN_BASE} 
+        <DigitalCardModal
+          qr={downloadDigitalQR}
+          onClose={() => setDownloadDigitalQR(null)}
+          PUBLIC_SCAN_BASE={PUBLIC_SCAN_BASE}
         />
       )}
     </div>
