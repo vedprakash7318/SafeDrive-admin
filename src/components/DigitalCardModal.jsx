@@ -12,7 +12,7 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
     try {
       setDownloading(true);
       const dataUrl = await toPng(cardRef.current, {
-        pixelRatio: 4, // 4x scale for high resolution print quality
+        pixelRatio: 6, // 6x scale for full HD+ resolution print quality
         skipFonts: false,
         cacheBust: true,
       });
@@ -60,10 +60,10 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
             ref={cardRef}
             className="relative overflow-hidden rounded-lg"
             style={{
-              width: '600px',
-              height: '358px', // approx 9.2:5.49 ratio
-              minWidth: '600px',
-              minHeight: '358px',
+              width: '9.2cm',
+              height: '5.49cm', // Exact physical ratio
+              minWidth: '9.2cm',
+              minHeight: '5.49cm',
               flexShrink: 0,
               backgroundColor: '#ffffff',
               color: '#000000', // Explicitly prevent inheriting oklch body text color
@@ -89,7 +89,7 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
             >
               <SafeDriveQRCode
                 value={`${PUBLIC_SCAN_BASE}/${qr.publicToken}`}
-                size={220} // large enough to be crisp
+                size={130} // size relative to 9.2cm width
                 className="w-full h-full object-contain"
                 includeMargin={false}
               />
