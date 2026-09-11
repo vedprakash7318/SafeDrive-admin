@@ -53,6 +53,8 @@ export default function Alerts() {
                 <th className="px-6 py-4">Triggered Time</th>
                 <th className="px-6 py-4">Vehicle Plate</th>
                 <th className="px-6 py-4">Owner Name</th>
+                <th className="px-6 py-4">Scan By</th>
+                <th className="px-6 py-4">Reason</th>
                 <th className="px-6 py-4">IP / Device</th>
                 <th className="px-6 py-4">Notified Contacts</th>
                 <th className="px-6 py-4">Status</th>
@@ -66,6 +68,8 @@ export default function Alerts() {
                   </td>
                   <td className="px-6 py-4 font-mono font-bold text-slate-900">{a.vehicleNumber}</td>
                   <td className="px-6 py-4 font-bold text-slate-900">{a.ownerName}</td>
+                  <td className="px-6 py-4 text-xs font-mono font-bold text-indigo-700">{a.scannerPhone || a.callerPhone || 'Unknown'}</td>
+                  <td className="px-6 py-4 text-xs font-medium text-slate-700">{a.reason || 'N/A'}</td>
                   <td className="px-6 py-4 text-xs text-slate-500">{a.ip}</td>
                   <td className="px-6 py-4 text-xs text-slate-700">
                     {a.notifiedContacts?.map((c, i) => (

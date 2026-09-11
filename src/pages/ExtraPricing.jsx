@@ -27,6 +27,8 @@ export default function ExtraPricing() {
   const [editingPkg, setEditingPkg] = useState(null);
   const [updating, setUpdating] = useState(false);
 
+  const [activeTab, setActiveTab] = useState('CALL');
+
   const fetchPackages = async () => {
     setLoading(true);
     try {
@@ -119,101 +121,122 @@ export default function ExtraPricing() {
       </div>
 
       {/* Immutability Banner */}
-      <div className="bg-indigo-50 border border-indigo-200 p-5 rounded-3xl flex items-center space-x-3 text-xs text-indigo-900">
+      <div className="bg-indigo-50 border border-indigo-200 p-5 rounded-3xl flex items-center space-x-3 text-xs text-indigo-900 mb-4">
         <Info className="w-5 h-5 flex-shrink-0 text-indigo-600" />
         <span>
           <strong>Quota Immutability Protection:</strong> Modifying package prices or quantities here only affects <strong>future purchases</strong>. Previous purchasers keep their current balance and receipt history safely unchanged.
         </span>
       </div>
 
-      {/* Extra Calls Booster Packs */}
-      <div>
-        <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center space-x-2">
-          <Phone className="w-5 h-5 text-emerald-600" />
-          <span>Extra Voice Call Top-Up Packages</span>
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {packages
-            .filter((p) => p.category === 'CALL')
-            .map((pkg) => (
-              <div key={pkg._id} className="bg-white border border-slate-200 p-6 rounded-3xl flex flex-col justify-between shadow-sm hover:shadow-md transition">
-                <div>
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="text-xs uppercase font-bold tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                      Extra Calls
-                    </span>
-                    <span className="text-2xl font-black text-slate-900">₹{pkg.price}</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-1">{pkg.name}</h3>
-                  <p className="text-xs text-slate-500">
-                    Adds <span className="font-bold text-emerald-600">+{pkg.quantity} Voice Calls</span> to vehicle owner's quota wallet.
-                  </p>
-                </div>
-
-                <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
-                  <button
-                    onClick={() => setEditingPkg(pkg)}
-                    className="text-indigo-600 hover:text-indigo-800 font-bold flex items-center space-x-1"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    <span>Edit Price / Qty</span>
-                  </button>
-                  <button
-                    onClick={() => handleDeletePackage(pkg._id)}
-                    className="text-red-600 hover:text-red-800 font-bold flex items-center space-x-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Remove</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-        </div>
+      {/* TABS */}
+      <div className="flex space-x-2 border-b border-slate-200 mb-6">
+        <button
+          onClick={() => setActiveTab('CALL')}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${
+            activeTab === 'CALL'
+              ? 'border-[#1D56A5] text-[#1D56A5]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Voice Call Packages
+        </button>
+        <button
+          onClick={() => setActiveTab('MESSAGE')}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${
+            activeTab === 'MESSAGE'
+              ? 'border-[#1D56A5] text-[#1D56A5]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Message & Alert Packages
+        </button>
       </div>
 
-      {/* Extra Messages Booster Packs */}
+      {/* ACTIVE TAB CONTENT */}
       <div>
-        <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center space-x-2">
-          <MessageSquare className="w-5 h-5 text-blue-600" />
-          <span>Extra Message & Alert Top-Up Packages</span>
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {packages
-            .filter((p) => p.category === 'MESSAGE')
-            .map((pkg) => (
-              <div key={pkg._id} className="bg-white border border-slate-200 p-6 rounded-3xl flex flex-col justify-between shadow-sm hover:shadow-md transition">
-                <div>
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="text-xs uppercase font-bold tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                      Extra Messages
-                    </span>
-                    <span className="text-2xl font-black text-slate-900">₹{pkg.price}</span>
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-1">{pkg.name}</h3>
-                  <p className="text-xs text-slate-500">
-                    Adds <span className="font-bold text-blue-600">+{pkg.quantity} SMS / WhatsApp</span> alerts to vehicle owner's quota wallet.
-                  </p>
-                </div>
+        {activeTab === 'CALL' && (
+          <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {packages
+                .filter((p) => p.category === 'CALL')
+                .map((pkg) => (
+                  <div key={pkg._id} className="bg-white border border-slate-200 p-6 rounded-3xl flex flex-col justify-between shadow-sm hover:shadow-md transition">
+                    <div>
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="text-xs uppercase font-bold tracking-wider text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                          Extra Calls
+                        </span>
+                        <span className="text-2xl font-black text-slate-900">₹{pkg.price}</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900 mb-1">{pkg.name}</h3>
+                      <p className="text-xs text-slate-500">
+                        Adds <span className="font-bold text-emerald-600">+{pkg.quantity} Voice Calls</span> to vehicle owner's quota wallet.
+                      </p>
+                    </div>
 
-                <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
-                  <button
-                    onClick={() => setEditingPkg(pkg)}
-                    className="text-indigo-600 hover:text-indigo-800 font-bold flex items-center space-x-1"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                    <span>Edit Price / Qty</span>
-                  </button>
-                  <button
-                    onClick={() => handleDeletePackage(pkg._id)}
-                    className="text-red-600 hover:text-red-800 font-bold flex items-center space-x-1"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Remove</span>
-                  </button>
-                </div>
-              </div>
-            ))}
-        </div>
+                    <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
+                      <button
+                        onClick={() => setEditingPkg(pkg)}
+                        className="text-indigo-600 hover:text-indigo-800 font-bold flex items-center space-x-1"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Edit Price / Qty</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeletePackage(pkg._id)}
+                        className="text-red-600 hover:text-red-800 font-bold flex items-center space-x-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'MESSAGE' && (
+          <div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+              {packages
+                .filter((p) => p.category === 'MESSAGE')
+                .map((pkg) => (
+                  <div key={pkg._id} className="bg-white border border-slate-200 p-6 rounded-3xl flex flex-col justify-between shadow-sm hover:shadow-md transition">
+                    <div>
+                      <div className="flex justify-between items-start mb-3">
+                        <span className="text-xs uppercase font-bold tracking-wider text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                          Extra Messages
+                        </span>
+                        <span className="text-2xl font-black text-slate-900">₹{pkg.price}</span>
+                      </div>
+                      <h3 className="text-lg font-bold text-slate-900 mb-1">{pkg.name}</h3>
+                      <p className="text-xs text-slate-500">
+                        Adds <span className="font-bold text-blue-600">+{pkg.quantity} SMS / Direct Alerts</span> to vehicle owner's quota wallet.
+                      </p>
+                    </div>
+
+                    <div className="mt-6 pt-4 border-t border-slate-100 flex justify-between items-center text-xs">
+                      <button
+                        onClick={() => setEditingPkg(pkg)}
+                        className="text-indigo-600 hover:text-indigo-800 font-bold flex items-center space-x-1"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Edit Price / Qty</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeletePackage(pkg._id)}
+                        className="text-red-600 hover:text-red-800 font-bold flex items-center space-x-1"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* CREATE PACKAGE MODAL */}

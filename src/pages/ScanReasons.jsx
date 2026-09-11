@@ -28,44 +28,7 @@ import {
 } from 'lucide-react';
 import { useAuth, API_BASE } from '../context/AuthContext';
 
-const getReasonIcon = (iconKey) => {
-  switch (iconKey) {
-    // Non-Vehicle Specific Icons
-    case 'missing':
-    case 'lost':
-    case 'search': return Search;
-    case 'other':
-    case 'message': return MessageSquare || MoreHorizontal;
 
-    // Vehicle Specific Icons
-    case 'ban': return Ban;
-    case 'unlock': return Unlock;
-    case 'car': return Car;
-    case 'bike': return Bike;
-    case 'truck': return Truck;
-
-    // Universal / General Icons
-    case 'alert':
-    case 'warning': return AlertTriangle;
-    case 'bell': return Bell;
-    case 'location':
-    case 'mappin': return MapPin;
-    case 'shield': return Shield;
-    default: return HelpCircle;
-  }
-};
-
-const getReasonColorClasses = (color) => {
-  switch (color) {
-    case 'red': return 'bg-red-50 text-red-500 border border-red-200';
-    case 'green': return 'bg-emerald-50 text-emerald-600 border border-emerald-200';
-    case 'blue': return 'bg-blue-50 text-blue-600 border border-blue-200';
-    case 'rose': return 'bg-rose-50 text-rose-600 border border-rose-200';
-    case 'purple': return 'bg-purple-50 text-purple-600 border border-purple-200';
-    case 'amber': return 'bg-amber-50 text-amber-600 border border-amber-200';
-    default: return 'bg-indigo-50 text-indigo-600 border border-indigo-200';
-  }
-};
 
 export default function ScanReasons() {
   const { authHeader } = useAuth();
@@ -75,13 +38,15 @@ export default function ScanReasons() {
   const [viewTab, setViewTab] = useState('active'); // 'active' | 'trash'
   const [categoryFilter, setCategoryFilter] = useState('ALL'); // 'ALL' | 'VEHICLE' | 'NON_VEHICLE'
 
+  const [qrTypes, setQrTypes] = useState([]);
+
   // New Reason Form
   const [showAddModal, setShowAddModal] = useState(false);
   const [newForm, setNewForm] = useState({
     title: '',
     description: '',
-    iconKey: 'alert',
-    color: 'indigo',
+    iconKey: '⚠️',
+    color: '#4f46e5',
     applicableTo: 'ALL',
     isOtherType: false
   });
@@ -112,15 +77,26 @@ export default function ScanReasons() {
     }
   };
 
+  const fetchQRTypes = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/admin/qr-types`, authHeader);
+      if (res.data.success) {
+        setQrTypes(res.data.types);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   useEffect(() => {
     fetchReasons(viewTab === 'trash');
+    fetchQRTypes();
   }, [viewTab]);
 
   // Filtered reasons based on categoryFilter
   const filteredReasons = reasons.filter((r) => {
     if (categoryFilter === 'ALL') return true;
-    const cat = r.applicableTo || r.category || 'ALL';
-    return cat === categoryFilter || cat === 'ALL';
+    return r.applicableTo === categoryFilter;
   });
 
   // Create Reason
@@ -129,14 +105,18 @@ export default function ScanReasons() {
     if (!newForm.title.trim()) return;
     setCreating(true);
     try {
-      const res = await axios.post(`${API_BASE}/admin/scan-reasons`, newForm, authHeader);
+      const payload = {
+        ...newForm,
+        applicableTo: newForm.applicableTo === 'ALL' ? null : newForm.applicableTo
+      };
+      const res = await axios.post(`${API_BASE}/admin/scan-reasons`, payload, authHeader);
       if (res.data.success) {
         setShowAddModal(false);
         setNewForm({
           title: '',
           description: '',
-          iconKey: 'alert',
-          color: 'indigo',
+          iconKey: '⚠️',
+          color: '#4f46e5',
           applicableTo: 'ALL',
           isOtherType: false
         });
@@ -155,9 +135,13 @@ export default function ScanReasons() {
     if (!editingReason) return;
     setUpdating(true);
     try {
+      const payload = {
+        ...editingReason,
+        applicableTo: editingReason.applicableTo === 'ALL' ? null : editingReason.applicableTo
+      };
       const res = await axios.put(
         `${API_BASE}/admin/scan-reasons/${editingReason._id}`,
-        editingReason,
+        payload,
         authHeader
       );
       if (res.data.success) {
@@ -249,11 +233,10 @@ export default function ScanReasons() {
         <div className="flex items-center space-x-2">
           <button
             onClick={() => setViewTab('active')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
-              viewTab === 'active'
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${viewTab === 'active'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
+              }`}
           >
             <Layers className="w-4 h-4" />
             <span>Active Reasons</span>
@@ -261,49 +244,30 @@ export default function ScanReasons() {
 
           <button
             onClick={() => setViewTab('trash')}
-            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
-              viewTab === 'trash'
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${viewTab === 'trash'
                 ? 'bg-rose-600 text-white shadow-xs'
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-            }`}
+              }`}
           >
             <Archive className="w-4 h-4" />
             <span>🗑️ Soft-Deleted Reasons</span>
           </button>
         </div>
 
-        {/* Category Filter Pills */}
-        <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 w-fit">
-          <button
-            onClick={() => setCategoryFilter('ALL')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-              categoryFilter === 'ALL'
-                ? 'bg-white text-slate-900 shadow-2xs'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
+        {/* Category Filter */}
+        <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="bg-transparent text-sm font-bold text-slate-700 px-3 py-1.5 focus:outline-none cursor-pointer"
           >
-            🌐 All ({reasons.length})
-          </button>
-          <button
-            onClick={() => setCategoryFilter('VEHICLE')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-              categoryFilter === 'VEHICLE'
-                ? 'bg-white text-emerald-700 shadow-2xs font-black'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            🚗 Vehicle Only
-          </button>
-          <button
-            onClick={() => setCategoryFilter('NON_VEHICLE')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-              categoryFilter === 'NON_VEHICLE'
-                ? 'bg-white text-amber-900 shadow-2xs font-black'
-                : 'text-slate-500 hover:text-slate-900'
-            }`}
-          >
-            🧳 Non-Vehicle (Luggage/Pet/Keys)
-          </button>
+            <option value="ALL">🌐 All ({reasons.length})</option>
+            {qrTypes.map(tag => (
+              <option key={tag._id} value={tag._id}>
+                {tag.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -338,14 +302,16 @@ export default function ScanReasons() {
                 </tr>
               ) : (
                 filteredReasons.map((r) => {
-                  const Icon = getReasonIcon(r.iconKey);
-                  const colorClass = getReasonColorClasses(r.color);
-                  const cat = r.applicableTo || r.category || 'ALL';
+                  const catObj = r.applicableTo ? qrTypes.find(t => t._id === r.applicableTo) : null;
+
                   return (
                     <tr key={r._id} className="hover:bg-slate-50/80 transition">
                       <td className="px-6 py-4 flex items-center space-x-3">
-                        <div className={`p-2.5 rounded-xl ${colorClass}`}>
-                          <Icon className="w-5 h-5" />
+                        <div
+                          className="w-10 h-10 flex items-center justify-center rounded-xl text-xl shadow-inner border border-black/5"
+                          style={{ backgroundColor: `${r.color}20`, color: r.color }}
+                        >
+                          <span>{r.iconKey}</span>
                         </div>
                         <div>
                           <div className="font-bold text-slate-900">{r.title}</div>
@@ -353,16 +319,12 @@ export default function ScanReasons() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        {cat === 'VEHICLE' ? (
-                          <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2.5 py-1 rounded-full">
-                            🚗 Vehicle Only
-                          </span>
-                        ) : cat === 'NON_VEHICLE' ? (
-                          <span className="bg-amber-50 text-amber-900 border border-amber-300 text-[10px] font-bold px-2.5 py-1 rounded-full">
-                            🧳 Non-Vehicle Only
+                        {catObj ? (
+                          <span className="bg-indigo-50 text-indigo-800 border border-indigo-200 text-[10px] font-bold px-2.5 py-1 rounded-full">
+                            {catObj.name}
                           </span>
                         ) : (
-                          <span className="bg-blue-50 text-blue-800 border border-blue-200 text-[10px] font-bold px-2.5 py-1 rounded-full">
+                          <span className="bg-slate-100 text-slate-800 border border-slate-200 text-[10px] font-bold px-2.5 py-1 rounded-full">
                             🌐 All / Universal
                           </span>
                         )}
@@ -382,11 +344,10 @@ export default function ScanReasons() {
                         {viewTab === 'active' ? (
                           <button
                             onClick={() => handleToggleActive(r)}
-                            className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition ${
-                              r.isActive
+                            className={`inline-flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-bold transition ${r.isActive
                                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
                                 : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                            }`}
+                              }`}
                           >
                             {r.isActive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                             <span>{r.isActive ? 'Active on QR' : 'Hidden'}</span>
@@ -461,113 +422,50 @@ export default function ScanReasons() {
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Applicable QR Category *
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const iconKey = (newForm.iconKey === 'missing') ? 'car' : newForm.iconKey;
-                      setNewForm({ ...newForm, applicableTo: 'VEHICLE', iconKey });
-                    }}
-                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
-                      newForm.applicableTo === 'VEHICLE'
-                        ? 'bg-emerald-50 border-emerald-400 text-emerald-950 ring-2 ring-emerald-400/20 shadow-xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="text-base mb-0.5">🚗</span>
-                    <span>Vehicle Only</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const iconKey = (newForm.iconKey !== 'other') ? 'missing' : 'other';
-                      setNewForm({ ...newForm, applicableTo: 'NON_VEHICLE', iconKey });
-                    }}
-                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
-                      newForm.applicableTo === 'NON_VEHICLE'
-                        ? 'bg-amber-50 border-amber-400 text-amber-950 ring-2 ring-amber-400/20 shadow-xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="text-base mb-0.5">🧳</span>
-                    <span>Non-Vehicle</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setNewForm({ ...newForm, applicableTo: 'ALL' })}
-                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
-                      newForm.applicableTo === 'ALL'
-                        ? 'bg-indigo-50 border-indigo-400 text-indigo-950 ring-2 ring-indigo-400/20 shadow-xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="text-base mb-0.5">🌐</span>
-                    <span>All / Universal</span>
-                  </button>
-                </div>
+                <select
+                  value={newForm.applicableTo}
+                  onChange={(e) => setNewForm({ ...newForm, applicableTo: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:bg-white focus:outline-none focus:border-indigo-600"
+                >
+                  <option value="ALL">🌐 All / Universal</option>
+                  {qrTypes.map(tag => (
+                    <option key={tag._id} value={tag._id}>
+                      {tag.isVehicle !== false ? '🚗' : '🧳'} {tag.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Icon Style</label>
-                  <select
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Icon (Emoji) *</label>
+                  <input
+                    type="text"
+                    maxLength="5"
+                    placeholder="e.g. 🚗"
                     value={newForm.iconKey}
                     onChange={(e) => setNewForm({ ...newForm, iconKey: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:border-indigo-600"
-                  >
-                    {newForm.applicableTo === 'NON_VEHICLE' && (
-                      <>
-                        <option value="missing">🔍 Missing / Lost & Found (missing)</option>
-                        <option value="other">💬 Others / Custom Note (other)</option>
-                      </>
-                    )}
-
-                    {newForm.applicableTo === 'VEHICLE' && (
-                      <>
-                        <option value="car">🚗 Vehicle / Movement (car)</option>
-                        <option value="ban">🚫 No Parking / Restriction (ban)</option>
-                        <option value="unlock">🔓 Unlocked / Open Window (unlock)</option>
-                        <option value="bike">🏍️ Bike / Two-Wheeler (bike)</option>
-                        <option value="truck">🚚 Truck / Heavy Vehicle (truck)</option>
-                        <option value="alert">⚠️ Warning / Emergency (alert)</option>
-                        <option value="other">💬 Custom Text / Message (other)</option>
-                      </>
-                    )}
-
-                    {newForm.applicableTo === 'ALL' && (
-                      <>
-                        <option value="missing">🔍 Missing / Lost & Found (missing)</option>
-                        <option value="car">🚗 Vehicle / Movement (car)</option>
-                        <option value="ban">🚫 No Parking / Restriction (ban)</option>
-                        <option value="unlock">🔓 Unlocked / Open Window (unlock)</option>
-                        <option value="bike">🏍️ Bike / Two-Wheeler (bike)</option>
-                        <option value="truck">🚚 Truck / Heavy Vehicle (truck)</option>
-                        <option value="alert">⚠️ Warning / Emergency (alert)</option>
-                        <option value="bell">🔔 Notification Bell (bell)</option>
-                        <option value="location">📍 Location / Towing (location)</option>
-                        <option value="shield">🛡️ Shield / Security (shield)</option>
-                        <option value="other">💬 Custom Text / Message (other)</option>
-                      </>
-                    )}
-                  </select>
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xl text-center focus:bg-white focus:outline-none focus:border-indigo-600"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Press Win + . or Cmd + Ctrl + Space</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Badge Color</label>
-                  <select
-                    value={newForm.color}
-                    onChange={(e) => setNewForm({ ...newForm, color: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-sm"
-                  >
-                    <option value="red">Red</option>
-                    <option value="green">Green</option>
-                    <option value="blue">Blue</option>
-                    <option value="rose">Rose</option>
-                    <option value="purple">Purple</option>
-                    <option value="amber">Amber</option>
-                  </select>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Badge Color *</label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="color"
+                      value={newForm.color}
+                      onChange={(e) => setNewForm({ ...newForm, color: e.target.value })}
+                      className="w-12 h-10 rounded-lg cursor-pointer border-0 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={newForm.color}
+                      onChange={(e) => setNewForm({ ...newForm, color: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-sm font-mono focus:bg-white focus:outline-none focus:border-indigo-600"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -631,113 +529,50 @@ export default function ScanReasons() {
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Applicable QR Category *
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const iconKey = (editingReason.iconKey === 'missing') ? 'car' : editingReason.iconKey;
-                      setEditingReason({ ...editingReason, applicableTo: 'VEHICLE', category: 'VEHICLE', iconKey });
-                    }}
-                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
-                      (editingReason.applicableTo || editingReason.category) === 'VEHICLE'
-                        ? 'bg-emerald-50 border-emerald-400 text-emerald-950 ring-2 ring-emerald-400/20 shadow-xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="text-base mb-0.5">🚗</span>
-                    <span>Vehicle Only</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const iconKey = (editingReason.iconKey !== 'other') ? 'missing' : 'other';
-                      setEditingReason({ ...editingReason, applicableTo: 'NON_VEHICLE', category: 'NON_VEHICLE', iconKey });
-                    }}
-                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
-                      (editingReason.applicableTo || editingReason.category) === 'NON_VEHICLE'
-                        ? 'bg-amber-50 border-amber-400 text-amber-950 ring-2 ring-amber-400/20 shadow-xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="text-base mb-0.5">🧳</span>
-                    <span>Non-Vehicle</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setEditingReason({ ...editingReason, applicableTo: 'ALL', category: 'ALL' })}
-                    className={`p-2.5 rounded-xl border text-center text-xs font-bold transition flex flex-col items-center justify-center ${
-                      (!editingReason.applicableTo && !editingReason.category) || (editingReason.applicableTo || editingReason.category) === 'ALL'
-                        ? 'bg-indigo-50 border-indigo-400 text-indigo-950 ring-2 ring-indigo-400/20 shadow-xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className="text-base mb-0.5">🌐</span>
-                    <span>All / Universal</span>
-                  </button>
-                </div>
+                <select
+                  value={editingReason.applicableTo || 'ALL'}
+                  onChange={(e) => setEditingReason({ ...editingReason, applicableTo: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm focus:bg-white focus:outline-none focus:border-indigo-600"
+                >
+                  <option value="ALL">🌐 All / Universal</option>
+                  {qrTypes.map(tag => (
+                    <option key={tag._id} value={tag._id}>
+                      {tag.isVehicle !== false ? '🚗' : '🧳'} {tag.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Icon Style</label>
-                  <select
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Icon (Emoji) *</label>
+                  <input
+                    type="text"
+                    maxLength="5"
+                    placeholder="e.g. 🚗"
                     value={editingReason.iconKey}
                     onChange={(e) => setEditingReason({ ...editingReason, iconKey: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xs font-semibold focus:bg-white focus:outline-none focus:border-indigo-600"
-                  >
-                    {(editingReason.applicableTo === 'NON_VEHICLE' || editingReason.category === 'NON_VEHICLE') && (
-                      <>
-                        <option value="missing">🔍 Missing / Lost & Found (missing)</option>
-                        <option value="other">💬 Others / Custom Note (other)</option>
-                      </>
-                    )}
-
-                    {(editingReason.applicableTo === 'VEHICLE' || editingReason.category === 'VEHICLE') && (
-                      <>
-                        <option value="car">🚗 Vehicle / Movement (car)</option>
-                        <option value="ban">🚫 No Parking / Restriction (ban)</option>
-                        <option value="unlock">🔓 Unlocked / Open Window (unlock)</option>
-                        <option value="bike">🏍️ Bike / Two-Wheeler (bike)</option>
-                        <option value="truck">🚚 Truck / Heavy Vehicle (truck)</option>
-                        <option value="alert">⚠️ Warning / Emergency (alert)</option>
-                        <option value="other">💬 Custom Text / Message (other)</option>
-                      </>
-                    )}
-
-                    {(!editingReason.applicableTo || editingReason.applicableTo === 'ALL' || (!editingReason.applicableTo && editingReason.category === 'ALL')) && (
-                      <>
-                        <option value="missing">🔍 Missing / Lost & Found (missing)</option>
-                        <option value="car">🚗 Vehicle / Movement (car)</option>
-                        <option value="ban">🚫 No Parking / Restriction (ban)</option>
-                        <option value="unlock">🔓 Unlocked / Open Window (unlock)</option>
-                        <option value="bike">🏍️ Bike / Two-Wheeler (bike)</option>
-                        <option value="truck">🚚 Truck / Heavy Vehicle (truck)</option>
-                        <option value="alert">⚠️ Warning / Emergency (alert)</option>
-                        <option value="bell">🔔 Notification Bell (bell)</option>
-                        <option value="location">📍 Location / Towing (location)</option>
-                        <option value="shield">🛡️ Shield / Security (shield)</option>
-                        <option value="other">💬 Custom Text / Message (other)</option>
-                      </>
-                    )}
-                  </select>
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-xl text-center focus:bg-white focus:outline-none focus:border-indigo-600"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">Press Win + . or Cmd + Ctrl + Space</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Color</label>
-                  <select
-                    value={editingReason.color}
-                    onChange={(e) => setEditingReason({ ...editingReason, color: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-sm"
-                  >
-                    <option value="red">Red</option>
-                    <option value="green">Green</option>
-                    <option value="blue">Blue</option>
-                    <option value="rose">Rose</option>
-                    <option value="purple">Purple</option>
-                    <option value="amber">Amber</option>
-                  </select>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Color *</label>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="color"
+                      value={editingReason.color}
+                      onChange={(e) => setEditingReason({ ...editingReason, color: e.target.value })}
+                      className="w-12 h-10 rounded-lg cursor-pointer border-0 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={editingReason.color}
+                      onChange={(e) => setEditingReason({ ...editingReason, color: e.target.value })}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 text-sm font-mono focus:bg-white focus:outline-none focus:border-indigo-600"
+                    />
+                  </div>
                 </div>
               </div>
 

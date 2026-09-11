@@ -33,6 +33,7 @@ export default function Products() {
   const [products, setProducts] = useState([]);
   const [qrTypes, setQrTypes] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [typeFilter, setTypeFilter] = useState('PHYSICAL');
 
   // Modal State
   const [showModal, setShowModal] = useState(false);
@@ -57,7 +58,7 @@ export default function Products() {
     initialMessages: 20,
     validityDays: 365,
     renewalAmount: 199,
-    featuresText: 'Instant Masked Calling to Owner\nWhatsApp Emergency Direct Connect\nAnti-Harassment Plate Verification\n1 Year Cloud Safety Protection'
+    featuresText: 'Instant Masked Calling to Owner\nInstant Push & Direct Notifications\nAnti-Harassment Plate Verification\n1 Year Cloud Safety Protection'
   });
 
   const fetchData = async () => {
@@ -140,7 +141,7 @@ export default function Products() {
       initialMessages: 20,
       validityDays: 365,
       renewalAmount: 199,
-      featuresText: 'Instant Masked Calling to Owner\nWhatsApp Emergency Direct Connect\nAnti-Harassment Plate Verification\n1 Year Full Cloud Protection'
+      featuresText: 'Instant Masked Calling to Owner\nInstant Push & Direct Notifications\nAnti-Harassment Plate Verification\n1 Year Full Cloud Protection'
     });
     setShowModal(true);
   };
@@ -222,13 +223,27 @@ export default function Products() {
     }
   };
 
-  const handleDeleteProduct = async (p) => {
-    if (!confirm(`Delete product ${p.name || p.title}?`)) return;
+  const handleToggleActive = async (p) => {
+    const newStatus = !p.isActive;
+    const msg = newStatus ? `Enable product ${p.name}? It will be visible on the store.` : `Disable product ${p.name}? It will be hidden from the store.`;
+    if (!confirm(msg)) return;
     try {
-      await axios.delete(`${API_BASE}/admin/products/${p._id}`, authHeader);
+      await axios.put(`${API_BASE}/admin/products/${p._id}`, { isActive: newStatus }, authHeader);
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Error deleting product');
+      alert(err.response?.data?.message || 'Error updating product');
+    }
+  };
+
+  const handleToggleStock = async (p) => {
+    const newStock = p.inStock === false ? true : false;
+    const msg = newStock ? `Mark ${p.name} as In Stock?` : `Mark ${p.name} as Out of Stock?`;
+    if (!confirm(msg)) return;
+    try {
+      await axios.put(`${API_BASE}/admin/products/${p._id}`, { inStock: newStock }, authHeader);
+      fetchData();
+    } catch (err) {
+      alert(err.response?.data?.message || 'Error updating product');
     }
   };
 
@@ -264,6 +279,28 @@ export default function Products() {
           </button>
         </div>
       </div>
+      
+      {/* 1.5 TABS FOR FILTERING */}
+      <div className="flex space-x-2 border-b border-slate-200 mb-4">
+        <button
+          onClick={() => setTypeFilter('PHYSICAL')}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${typeFilter === 'PHYSICAL' ? 'border-[#1D56A5] text-[#1D56A5]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+        >
+          Physical Products
+        </button>
+        <button
+          onClick={() => setTypeFilter('DIGITAL')}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${typeFilter === 'DIGITAL' ? 'border-[#1D56A5] text-[#1D56A5]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+        >
+          Digital Products
+        </button>
+        <button
+          onClick={() => setTypeFilter('ALL')}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${typeFilter === 'ALL' ? 'border-[#1D56A5] text-[#1D56A5]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+        >
+          All Products
+        </button>
+      </div>
 
       {/* 2. PRODUCTS TABLE */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
@@ -280,14 +317,14 @@ export default function Products() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {products.length === 0 ? (
+              {products.filter(p => typeFilter === 'ALL' || (p.qrType || 'PHYSICAL') === typeFilter).length === 0 ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-12 text-center text-slate-400 text-xs">
-                    {loading ? 'Loading products...' : 'No products found. Click "Add New Product" to create one.'}
+                    {loading ? 'Loading products...' : 'No products found for this category.'}
                   </td>
                 </tr>
               ) : (
-                products.map((p) => {
+                products.filter(p => typeFilter === 'ALL' || (p.qrType || 'PHYSICAL') === typeFilter).map((p) => {
                   const mrp = p.originalPrice || (p.price + (p.discount || 0));
                   const hasDiscount = mrp > p.price;
                   const discountVal = hasDiscount ? (p.discount || (mrp - p.price)) : 0;
@@ -313,9 +350,15 @@ export default function Products() {
                           <div>
                             <div
                               onClick={() => setViewingProduct(p)}
-                              className="font-bold text-slate-900 text-sm hover:text-[#1D56A5] cursor-pointer transition flex items-center space-x-2"
+                              className="font-bold text-slate-900 text-sm hover:text-[#1D56A5] cursor-pointer transition flex items-center gap-2 flex-wrap"
                             >
-                              <span>{p.title || p.name}</span>
+                              <span className={p.isActive === false ? 'text-slate-400' : ''}>{p.title || p.name}</span>
+                              {p.isActive === false && (
+                                <span className="bg-red-50 text-red-600 border border-red-200 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">Disabled</span>
+                              )}
+                              {p.inStock === false && (
+                                <span className="bg-orange-50 text-orange-600 border border-orange-200 text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">Out of Stock</span>
+                              )}
                               <span className="bg-slate-100 text-slate-700 font-mono font-bold text-[10px] px-2 py-0.5 rounded-full border border-slate-200">
                                 Total Sold: {p.soldCount || 0} Units
                               </span>
@@ -378,29 +421,50 @@ export default function Products() {
                       <td className="px-6 py-3.5 text-right space-x-1.5 whitespace-nowrap">
                         <button
                           onClick={() => setViewingProduct(p)}
-                          title="View Product Details"
-                          className="text-xs bg-slate-100 hover:bg-slate-800 hover:text-white text-slate-700 border border-slate-200 font-bold px-2.5 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
+                          className="group relative p-2 text-[#1D56A5] hover:bg-[#1D56A5] hover:text-white bg-[#1D56A5]/10 rounded-lg transition shadow-2xs"
                         >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>View</span>
+                          <Eye className="w-4 h-4" />
+                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-200 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg pointer-events-none z-50 whitespace-nowrap">
+                            View Details
+                          </span>
                         </button>
 
                         <button
                           onClick={() => handleOpenEdit(p)}
-                          title="Edit Product"
-                          className="text-xs bg-[#1D56A5]/10 hover:bg-[#1D56A5] hover:text-white text-[#1D56A5] border border-[#1D56A5]/30 font-bold px-2.5 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
+                          className="group relative p-2 text-slate-700 bg-slate-100 hover:bg-slate-800 hover:text-white rounded-lg transition shadow-2xs"
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
-                          <span>Edit</span>
+                          <Edit2 className="w-4 h-4" />
+                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-200 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg pointer-events-none z-50 whitespace-nowrap">
+                            Edit Product
+                          </span>
                         </button>
 
                         <button
-                          onClick={() => handleDeleteProduct(p)}
-                          title="Delete Product"
-                          className="text-xs bg-red-50 hover:bg-[#E94E1A] hover:text-white text-[#E94E1A] border border-[#E94E1A]/30 font-bold px-2.5 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
+                          onClick={() => handleToggleStock(p)}
+                          className={`group relative p-2 rounded-lg transition shadow-2xs ${
+                            p.inStock !== false 
+                              ? 'text-orange-600 bg-orange-50 hover:bg-orange-500 hover:text-white' 
+                              : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-500 hover:text-white'
+                          }`}
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Delete</span>
+                          <Box className="w-4 h-4" />
+                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-200 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg pointer-events-none z-50 whitespace-nowrap">
+                            {p.inStock !== false ? 'Mark Out of Stock' : 'Mark In Stock'}
+                          </span>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleToggleActive(p)}
+                          className={`group relative p-2 rounded-lg transition shadow-2xs ${
+                            p.isActive !== false 
+                              ? 'text-slate-400 hover:bg-slate-500 hover:text-white bg-slate-100' 
+                              : 'text-emerald-500 hover:bg-emerald-500 hover:text-white bg-emerald-50'
+                          }`}
+                        >
+                          {p.isActive !== false ? <X className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                          <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-200 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg pointer-events-none z-50 whitespace-nowrap">
+                            {p.isActive !== false ? 'Disable Product' : 'Enable Product'}
+                          </span>
                         </button>
                       </td>
                     </tr>

@@ -12,6 +12,8 @@ import QRTypes from './pages/QRTypes';
 import QRFormats from './pages/QRFormats';
 import SettingsTags from './pages/SettingsTags';
 import GlobalSettings from './pages/GlobalSettings';
+import WebsiteSettings from './pages/WebsiteSettings';
+import FAQs from './pages/FAQs';
 import ScanReasons from './pages/ScanReasons';
 import ExtraPricing from './pages/ExtraPricing';
 import Users from './pages/Users';
@@ -25,7 +27,10 @@ import Products from './pages/Products';
 import ProductDetails from './pages/ProductDetails';
 import Orders from './pages/Orders';
 import ContactMessages from './pages/ContactMessages';
-
+import Dealers from './pages/Dealers';
+import DealerDetails from './pages/DealerDetails';
+import PartnerManageProducts from './pages/PartnerManageProducts';
+import PartnerOrders from './pages/PartnerOrders';
 function AuthenticatedApp() {
   const { token } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -80,6 +85,8 @@ function AuthenticatedApp() {
             <Route path="/settings/reasons" element={<ScanReasons />} />
             <Route path="/settings/tags" element={<SettingsTags />} />
             <Route path="/settings/global" element={<GlobalSettings />} />
+            <Route path="/partner/manage-products" element={<PartnerManageProducts />} />
+            <Route path="/partner/orders" element={<PartnerOrders />} />
             <Route path="/settings" element={<Navigate to="/settings/qr-types" replace />} />
             <Route path="/users" element={<Users />} />
             <Route path="/users/:id" element={<UserDetails />} />
@@ -87,7 +94,12 @@ function AuthenticatedApp() {
             <Route path="/qr-users/:id" element={<QRUserDetails />} />
             <Route path="/vehicles" element={<Vehicles />} />
             <Route path="/contact-messages" element={<ContactMessages />} />
+            <Route path="/dealers" element={<Dealers />} />
+            <Route path="/dealers/:id" element={<DealerDetails />} />
             <Route path="/alerts" element={<Alerts />} />
+            <Route path="/settings" element={<GlobalSettings />} />
+            <Route path="/website-settings" element={<WebsiteSettings />} />
+            <Route path="/faqs" element={<FAQs />} />
             <Route path="/scan-logs" element={<ScanLogs />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

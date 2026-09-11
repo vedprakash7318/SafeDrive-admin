@@ -1,25 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
   Users as UsersIcon,
   RefreshCw,
   Search,
-  Car,
   QrCode,
-  CreditCard,
-  Phone,
-  Mail,
-  MapPin,
-  ShieldCheck,
-  ShieldAlert,
   Eye,
-  CheckCircle2,
   X,
   ExternalLink,
   ShoppingBag
 } from 'lucide-react';
 import { useAuth, API_BASE, PUBLIC_SCAN_BASE } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 export default function Users() {
   const navigate = useNavigate();
@@ -59,8 +52,9 @@ export default function Users() {
       if (selectedUser && selectedUser._id === u._id) {
         setSelectedUser({ ...selectedUser, status: nextStatus });
       }
+      toast.success(`User status updated to ${nextStatus}`);
     } catch (err) {
-      alert(err.response?.data?.message || 'Error updating user');
+      toast.error(err.response?.data?.message || 'Error updating user');
     }
   };
 
@@ -82,6 +76,9 @@ export default function Users() {
   const totalActiveQRs = users.reduce((sum, u) => sum + (u.activeQRsCount || 0), 0);
   const totalSoldQRs = users.reduce((sum, u) => sum + (u.soldQRsCount || 0), 0);
   const totalRevenue = users.reduce((sum, u) => sum + (u.totalSpent || 0), 0);
+  const totalCancelledQRs = users.reduce((sum, u) => sum + (u.cancelledQRsCount || 0), 0);
+  const totalReturnedQRs = users.reduce((sum, u) => sum + (u.returnedQRsCount || 0), 0);
+  const totalDealerActivatedUsers = users.filter(u => u.registeredVia === 'DEALER_ACTIVATION').length;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -107,10 +104,15 @@ export default function Users() {
       </div>
 
       {/* 2. SUMMARY KPI STATS CARDS */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3.5">
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Buyers</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Buyers/Users</div>
           <div className="text-2xl font-black text-slate-900 mt-1">{totalCustomers}</div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-amber-600">By Dealer Activation</div>
+          <div className="text-2xl font-black text-amber-600 mt-1">{totalDealerActivatedUsers}</div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
@@ -126,6 +128,16 @@ export default function Users() {
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
           <div className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Pending Activation (Sold)</div>
           <div className="text-2xl font-black text-amber-600 mt-1">{totalSoldQRs}</div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-red-600">Cancelled</div>
+          <div className="text-2xl font-black text-red-600 mt-1">{totalCancelledQRs}</div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-orange-600">Returned</div>
+          <div className="text-2xl font-black text-orange-600 mt-1">{totalReturnedQRs}</div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs col-span-2 md:col-span-1">
@@ -152,11 +164,10 @@ export default function Users() {
             <button
               key={st}
               onClick={() => setStatusFilter(st)}
-              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition ${
-                statusFilter === st
-                  ? 'bg-[#1D56A5] text-white shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition ${statusFilter === st
+                ? 'bg-[#1D56A5] text-white shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               {st}
             </button>
@@ -203,6 +214,13 @@ export default function Users() {
                       <div className="text-[10px] text-slate-400 mt-0.5">
                         {u.city ? `${u.city}, ${u.state || ''}` : u.address}
                       </div>
+                      {u.registeredVia === 'DEALER_ACTIVATION' && (
+                        <div className="mt-1">
+                          <span className="bg-amber-50 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-200 uppercase">
+                            Dealer Activated
+                          </span>
+                        </div>
+                      )}
                     </td>
 
                     {/* 2. QR Sets Bought */}
@@ -225,6 +243,11 @@ export default function Users() {
                         <span className="bg-emerald-50 text-[#259A3A] font-bold text-[10px] px-2 py-0.5 rounded-full border border-[#259A3A]/20">
                           {u.activeQRsCount || 0} Active
                         </span>
+                        {u.suspendedQRsCount > 0 && (
+                          <span className="bg-red-50 text-[#E94E1A] font-bold text-[10px] px-2 py-0.5 rounded-full border border-[#E94E1A]/20">
+                            {u.suspendedQRsCount} Suspended
+                          </span>
+                        )}
                         {u.soldQRsCount > 0 && (
                           <span className="bg-amber-50 text-amber-700 font-bold text-[10px] px-2 py-0.5 rounded-full border border-amber-200">
                             {u.soldQRsCount} Pending Scan
@@ -242,11 +265,10 @@ export default function Users() {
                     {/* 5. Account Status */}
                     <td className="px-6 py-3.5">
                       <span
-                        className={`inline-flex items-center space-x-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-                          u.status === 'ACTIVE'
-                            ? 'bg-emerald-50 text-[#259A3A] border border-[#259A3A]/30'
-                            : 'bg-red-50 text-[#E94E1A] border border-[#E94E1A]/30'
-                        }`}
+                        className={`inline-flex items-center space-x-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${u.status === 'ACTIVE'
+                          ? 'bg-emerald-50 text-[#259A3A] border border-[#259A3A]/30'
+                          : 'bg-red-50 text-[#E94E1A] border border-[#E94E1A]/30'
+                          }`}
                       >
                         <span className={`w-1.5 h-1.5 rounded-full ${u.status === 'ACTIVE' ? 'bg-[#259A3A]' : 'bg-[#E94E1A]'}`}></span>
                         <span>{u.status}</span>
@@ -265,11 +287,10 @@ export default function Users() {
 
                       <button
                         onClick={() => handleToggleUserStatus(u)}
-                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center space-x-1 shadow-2xs ${
-                          u.status === 'SUSPENDED'
-                            ? 'bg-[#259A3A]/10 hover:bg-[#259A3A] hover:text-white text-[#259A3A] border-[#259A3A]/30'
-                            : 'bg-[#E94E1A]/10 hover:bg-[#E94E1A] hover:text-white text-[#E94E1A] border-[#E94E1A]/30'
-                        }`}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center space-x-1 shadow-2xs ${u.status === 'SUSPENDED'
+                          ? 'bg-[#259A3A]/10 hover:bg-[#259A3A] hover:text-white text-[#259A3A] border-[#259A3A]/30'
+                          : 'bg-[#E94E1A]/10 hover:bg-[#E94E1A] hover:text-white text-[#E94E1A] border-[#E94E1A]/30'
+                          }`}
                       >
                         <span>{u.status === 'SUSPENDED' ? 'Activate' : 'Suspend'}</span>
                       </button>
@@ -286,18 +307,17 @@ export default function Users() {
       {selectedUser && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-white border border-slate-200 rounded-3xl max-w-3xl w-full p-6 md:p-8 shadow-2xl my-6 max-h-[90vh] overflow-y-auto">
-            
+
             {/* Header */}
             <div className="flex justify-between items-start pb-4 border-b border-slate-100 mb-6">
               <div>
                 <h3 className="font-black text-xl text-slate-900 flex items-center space-x-2">
                   <span>{selectedUser.name}</span>
                   <span
-                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                      selectedUser.status === 'ACTIVE'
-                        ? 'bg-emerald-50 text-[#259A3A] border border-[#259A3A]/30'
-                        : 'bg-red-50 text-[#E94E1A] border border-[#E94E1A]/30'
-                    }`}
+                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${selectedUser.status === 'ACTIVE'
+                      ? 'bg-emerald-50 text-[#259A3A] border border-[#259A3A]/30'
+                      : 'bg-red-50 text-[#E94E1A] border border-[#E94E1A]/30'
+                      }`}
                   >
                     {selectedUser.status}
                   </span>
@@ -352,11 +372,10 @@ export default function Users() {
                         <div className="flex justify-between items-center">
                           <span className="font-mono font-black text-slate-900 text-sm">{qr.copyCode}</span>
                           <span
-                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              qr.status === 'ACTIVE'
-                                ? 'bg-emerald-50 text-[#259A3A] border border-[#259A3A]/30'
-                                : 'bg-blue-50 text-[#1D56A5] border border-[#1D56A5]/30'
-                            }`}
+                            className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${qr.status === 'ACTIVE'
+                              ? 'bg-emerald-50 text-[#259A3A] border border-[#259A3A]/30'
+                              : 'bg-blue-50 text-[#1D56A5] border border-[#1D56A5]/30'
+                              }`}
                           >
                             {qr.status}
                           </span>

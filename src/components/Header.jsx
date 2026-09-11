@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, Menu, X, Calendar, Bell } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronDown, Menu, X, Calendar, Bell, AlertTriangle } from 'lucide-react';
+import { useAuth, API_BASE } from '../context/AuthContext';
+import axios from 'axios';
 
 export default function Header({
   onToggleSidebar = () => {},
@@ -14,12 +15,56 @@ export default function Header({
   const dateStr = today.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) + ' - Today';
 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [notifications, setNotifications] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [user?.token]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchNotifications = async () => {
+    if (!user?.token) return;
+    try {
+      const res = await axios.get(`${API_BASE}/user/notifications`, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
+      if (res.data.success) {
+        setNotifications(res.data.notifications || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch admin notifications', error);
+    }
+  };
+
+  const markAsRead = async (id) => {
+    try {
+      await axios.put(`${API_BASE}/user/notifications/${id}/read`, {}, {
+        headers: { Authorization: `Bearer ${user.token}` }
+      });
+      setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+    } catch (error) {
+      console.error('Failed to mark notification as read', error);
+    }
+  };
 
   // On mobile, if mobileSidebarOpen is true, it's open (show X).
   // On desktop, if sidebarCollapsed is false, it's open (show X).
@@ -55,13 +100,59 @@ export default function Header({
         </div>
 
         {/* Notifications */}
-        <div className="relative">
-          <button className="p-2 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition">
+        <div className="relative" ref={dropdownRef}>
+          <button 
+            onClick={() => setShowDropdown(!showDropdown)}
+            className={`p-2 rounded-full border transition ${showDropdown ? 'bg-slate-100 border-slate-300' : 'border-slate-200 hover:bg-slate-50 text-slate-600'}`}
+          >
             <Bell className="w-5 h-5" />
           </button>
-          <span className="absolute top-0 right-0 w-4 h-4 bg-brand-orange text-white text-[9px] font-bold flex items-center justify-center rounded-full border-2 border-white -mt-1 -mr-1 shadow-sm">
-            5
-          </span>
+          
+          {notifications.filter(n => !n.isRead).length > 0 && (
+            <span className="absolute top-0 right-0 w-4 h-4 bg-brand-orange text-white text-[9px] font-bold flex items-center justify-center rounded-full border-2 border-white -mt-1 -mr-1 shadow-sm">
+              {notifications.filter(n => !n.isRead).length}
+            </span>
+          )}
+
+          {/* Notification Dropdown */}
+          {showDropdown && (
+            <div className="absolute right-0 mt-3 w-80 bg-white border border-slate-200 shadow-xl rounded-2xl overflow-hidden z-50 origin-top-right">
+              <div className="bg-slate-50 px-4 py-3 border-b border-slate-100 flex justify-between items-center">
+                <h3 className="font-bold text-slate-800 text-sm">Notifications</h3>
+                <span className="text-xs font-semibold text-brand-orange">{notifications.filter(n => !n.isRead).length} unread</span>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-slate-400 text-sm">No notifications yet.</div>
+                ) : (
+                  notifications.map(n => (
+                    <div 
+                      key={n._id} 
+                      onClick={() => !n.isRead && markAsRead(n._id)}
+                      className={`p-4 border-b border-slate-100 last:border-0 cursor-pointer transition ${n.isRead ? 'bg-white opacity-60' : 'bg-[#fff9f2] hover:bg-[#fff2e5]'}`}
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className={`mt-0.5 p-1.5 rounded-full ${n.type === 'SYSTEM' ? 'bg-red-100 text-red-600' : 'bg-brand-orange/20 text-brand-orange'}`}>
+                          {n.type === 'SYSTEM' ? <AlertTriangle className="w-4 h-4" /> : <Bell className="w-4 h-4" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm ${n.isRead ? 'font-medium text-slate-700' : 'font-bold text-slate-900'} truncate`}>
+                            {n.title}
+                          </p>
+                          <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                            {n.message}
+                          </p>
+                          <p className="text-[10px] text-slate-400 mt-2 font-mono">
+                            {new Date(n.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Profile */}

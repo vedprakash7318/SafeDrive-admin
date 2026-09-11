@@ -113,8 +113,10 @@ export default function QRUsers() {
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-purple-600">Total SMS Alerts Active</div>
-          <div className="text-2xl font-black text-purple-600 mt-1">{totalSMSAvailable} SMS</div>
+          <div className="text-[10px] font-bold uppercase tracking-wider text-amber-600">Dealer Activated Users</div>
+          <div className="text-2xl font-black text-amber-600 mt-1">
+            {qrUsers.filter(k => k.user?.registeredVia === 'DEALER_ACTIVATION').length}
+          </div>
         </div>
       </div>
 
@@ -196,6 +198,13 @@ export default function QRUsers() {
                             <Phone className="w-3 h-3 text-slate-400" />
                             <span>{k.user?.phone || 'N/A'}</span>
                           </div>
+                          {k.user?.registeredVia === 'DEALER_ACTIVATION' && (
+                            <div className="mt-1">
+                              <span className="bg-amber-50 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-200 uppercase">
+                                Dealer Activated
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>

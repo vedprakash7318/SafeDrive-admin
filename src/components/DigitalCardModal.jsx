@@ -12,11 +12,11 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
     try {
       setDownloading(true);
       const dataUrl = await toPng(cardRef.current, {
-        pixelRatio: 6, // 6x scale for full HD+ resolution print quality
+        pixelRatio: 8, // 8x scale for extremely high quality
         skipFonts: false,
         cacheBust: true,
       });
-      
+
       const link = document.createElement('a');
       link.download = `SafeDrive_DigitalCard_${qr.copyCode}.png`;
       link.href = dataUrl;
@@ -66,7 +66,7 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
               minHeight: '5.49cm',
               flexShrink: 0,
               backgroundColor: '#ffffff',
-              color: '#000000', // Explicitly prevent inheriting oklch body text color
+              color: '#000000',
               border: '1px solid #e2e8f0',
             }}
           >
@@ -88,29 +88,21 @@ export default function DigitalCardModal({ qr, onClose, PUBLIC_SCAN_BASE }) {
               }}
             >
               <SafeDriveQRCode
+
                 value={`${PUBLIC_SCAN_BASE}/${qr.publicToken}`}
                 size={130} // size relative to 9.2cm width
                 className="w-full h-full object-contain"
                 includeMargin={false}
               />
-              
+
               {/* ID or PIN Badge explicitly pinned to bottom center of this box */}
               <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
-                {qr.securityCode ? (
-                  <div 
-                    className="font-mono font-black text-xs px-2 py-0.5 rounded whitespace-nowrap"
-                    style={{ backgroundColor: '#259A3A', color: '#ffffff', border: '1px solid rgba(37, 154, 58, 0.5)' }}
-                  >
-                    PIN: {qr.securityCode}
-                  </div>
-                ) : (
-                  <div 
+                  <div
                     className="font-mono font-black text-xs px-2 py-0.5 rounded whitespace-nowrap"
                     style={{ backgroundColor: '#259A3A', color: '#ffffff', border: '1px solid rgba(37, 154, 58, 0.5)' }}
                   >
                     ID: {qr.copyCode}
                   </div>
-                )}
               </div>
             </div>
           </div>

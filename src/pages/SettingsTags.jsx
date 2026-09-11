@@ -142,13 +142,7 @@ export default function SettingsTags() {
         </div>
 
         <div className="flex items-center space-x-3">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md shadow-indigo-600/20 transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Batch Tag</span>
-          </button>
+
           <button
             onClick={() => fetchTags(viewTab === 'trash')}
             className="flex items-center space-x-1.5 bg-white border border-slate-200 text-slate-700 px-3.5 py-2.5 rounded-xl text-xs font-semibold shadow-xs hover:bg-slate-50 transition"

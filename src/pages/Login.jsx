@@ -5,7 +5,7 @@ import { useAuth, API_BASE } from '../context/AuthContext';
 
 export default function Login() {
   const { login } = useAuth();
-  const [phone, setPhone] = useState('9999999999');
+  const [email, setEmail] = useState('admin@safedrive.com');
   const [password, setPassword] = useState('admin123');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -15,7 +15,7 @@ export default function Login() {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.post(`${API_BASE}/auth/login`, { phone, password });
+      const res = await axios.post(`${API_BASE}/auth/login`, { email, password });
       if (res.data.success) {
         if (res.data.user.role !== 'SUPER_ADMIN' && res.data.user.role !== 'ADMIN') {
           setError('Access denied: You are not an administrator.');
@@ -53,14 +53,14 @@ export default function Login() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Phone Number</label>
+            <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Email Address</label>
             <input
-              type="text"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-900 font-mono text-sm focus:bg-white focus:outline-none focus:border-indigo-600 transition"
-              placeholder="Admin Phone"
+              placeholder="admin@safedrive.com"
             />
           </div>
 
@@ -87,7 +87,7 @@ export default function Login() {
 
         <div className="mt-8 pt-6 border-t border-slate-100 text-center">
           <p className="text-xs text-slate-500">
-            Demo Credentials: <span className="text-indigo-600 font-mono font-bold">9999999999 / admin123</span>
+            Demo Credentials: <span className="text-indigo-600 font-mono font-bold">admin@safedrive.com / admin123</span>
           </p>
         </div>
       </div>

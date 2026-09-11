@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
   UserCheck,
@@ -31,6 +31,9 @@ import { useAuth, API_BASE, PUBLIC_SCAN_BASE } from '../context/AuthContext';
 export default function QRUserDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const targetProductId = searchParams.get('productId');
   const { authHeader } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -153,16 +156,23 @@ export default function QRUserDetails() {
     e.preventDefault();
     setVehicleSubmitting(true);
     try {
+      const emergencyContactsList = [
+        { name: editVehicleForm.contact1Name || 'Emergency Contact 1', number: editVehicleForm.contact1Phone }
+      ];
+      if (editVehicleForm.contact2Phone && editVehicleForm.contact2Phone.trim()) {
+        emergencyContactsList.push({
+          name: editVehicleForm.contact2Name || 'Emergency Contact 2',
+          number: editVehicleForm.contact2Phone.trim()
+        });
+      }
+
       const res = await axios.put(
         `${API_BASE}/admin/vehicles/${editVehicleForm.vehicleId}`,
         {
           vehicleBrand: editVehicleForm.vehicleBrand,
           vehicleName: editVehicleForm.vehicleName,
           vehicleNumber: editVehicleForm.vehicleNumber,
-          emergencyContacts: [
-            { name: editVehicleForm.contact1Name, number: editVehicleForm.contact1Phone },
-            { name: editVehicleForm.contact2Name, number: editVehicleForm.contact2Phone }
-          ]
+          emergencyContacts: emergencyContactsList
         },
         authHeader
       );
@@ -252,8 +262,21 @@ export default function QRUserDetails() {
   }
 
   const { qrUser, kits = [], vehicles = [], payments = [], quotaLedger = [] } = data;
-  const primaryKit = kits[0] || {};
+  
+  let primaryKit = kits[0] || {};
+  if (targetProductId) {
+    const found = kits.find(k => k.productId === targetProductId);
+    if (found) primaryKit = found;
+  }
+  
   const primaryVehicle = primaryKit.vehicle || vehicles[0] || null;
+
+  const filteredPayments = targetProductId 
+    ? payments.filter(p => 
+        (primaryKit.orderNumber && p.metadata?.orderNumber === primaryKit.orderNumber) || 
+        p.metadata?.qrId === primaryKit.primaryQRId
+      )
+    : payments;
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-16">
@@ -308,18 +331,18 @@ export default function QRUserDetails() {
           <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Calling Quota Balance</div>
           <div className="text-2xl font-black text-emerald-700 mt-1 flex items-center space-x-2">
             <PhoneCall className="w-5 h-5 text-emerald-600" />
-            <span>{primaryKit.wallet?.callBalance ?? 10} Calls</span>
+            <span>{primaryKit.wallet?.callBalance ?? 10} Calls Left</span>
           </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Used: {primaryKit.wallet?.totalCallsUsed ?? 0}</div>
+          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Total Allocated: {primaryKit.wallet?.totalCallsPurchased ?? 10} | Used: {primaryKit.wallet?.totalCallsUsed ?? 0}</div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
           <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400">SMS Alerts Balance</div>
           <div className="text-2xl font-black text-purple-700 mt-1 flex items-center space-x-2">
             <MessageSquare className="w-5 h-5 text-purple-600" />
-            <span>{primaryKit.wallet?.messageBalance ?? 20} SMS</span>
+            <span>{primaryKit.wallet?.messageBalance ?? 20} SMS Left</span>
           </div>
-          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Used: {primaryKit.wallet?.totalMessagesUsed ?? 0}</div>
+          <div className="text-[10px] text-slate-400 font-mono mt-0.5">Total Allocated: {primaryKit.wallet?.totalMessagesPurchased ?? 20} | Used: {primaryKit.wallet?.totalMessagesUsed ?? 0}</div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
@@ -381,11 +404,6 @@ export default function QRUserDetails() {
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
                 <span className="text-[10px] font-bold uppercase text-slate-400 block">Gender</span>
                 <span className="font-bold text-slate-800 text-xs uppercase">{qrUser.gender || 'NOT SPECIFIED'}</span>
-              </div>
-
-              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                <span className="text-[10px] font-bold uppercase text-slate-400 block">WhatsApp Number</span>
-                <span className="font-mono text-slate-700 text-xs">{qrUser.whatsappNumber || qrUser.phone || 'N/A'}</span>
               </div>
 
               <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 col-span-2">
@@ -519,15 +537,41 @@ export default function QRUserDetails() {
                     <div className="text-[10px] text-slate-400 font-mono mt-1">Batch: {primaryKit.batchId}</div>
                   </div>
 
-                  <a
-                    href={`${PUBLIC_SCAN_BASE}/scan/${c.publicToken}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="p-1.5 bg-white text-[#1D56A5] rounded-lg border border-slate-200 hover:bg-blue-50 transition"
-                    title="Test Public Scan"
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={async () => {
+                        if (!c._id) return alert('QR ID not found');
+                        const nextStatus = c.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
+                        if (!confirm(`Change status of tag ${c.copyCode} to ${nextStatus}?`)) return;
+                        try {
+                          const res = await axios.put(`${API_BASE}/admin/qr/${c._id}/status`, { status: nextStatus }, authHeader);
+                          if (res.data.success) {
+                            fetchQRUserDetails();
+                          }
+                        } catch (err) {
+                          alert(err.response?.data?.message || 'Error updating status');
+                        }
+                      }}
+                      className={`text-[10px] font-bold px-2 py-1.5 rounded-lg transition shadow-2xs inline-flex items-center space-x-1 ${
+                        c.status === 'SUSPENDED' 
+                          ? 'bg-[#259A3A]/10 hover:bg-[#259A3A] hover:text-white text-[#259A3A] border border-[#259A3A]/30' 
+                          : 'bg-[#E94E1A]/10 hover:bg-[#E94E1A] hover:text-white text-[#E94E1A] border border-[#E94E1A]/30'
+                      }`}
+                      title={c.status === 'SUSPENDED' ? 'Activate Tag' : 'Suspend Tag'}
+                    >
+                      <span>{c.status === 'SUSPENDED' ? 'Activate' : 'Suspend'}</span>
+                    </button>
+                    
+                    <a
+                      href={`${PUBLIC_SCAN_BASE}/scan/${c.publicToken}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="p-1.5 bg-white text-[#1D56A5] rounded-lg border border-slate-200 hover:bg-blue-50 transition"
+                      title="Test Public Scan"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
                 </div>
               ))}
             </div>
@@ -586,16 +630,16 @@ export default function QRUserDetails() {
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-3">
             <h3 className="font-black text-sm text-slate-900 flex items-center space-x-2">
               <CreditCard className="w-4 h-4 text-slate-700" />
-              <span>Payments by this QR User ({payments.length})</span>
+              <span>Payments by this QR User ({filteredPayments.length})</span>
             </h3>
 
-            {payments.length === 0 ? (
+            {filteredPayments.length === 0 ? (
               <p className="text-xs text-slate-400">
-                No direct renewal or addon payments made by this driver yet. Future renewals from the user portal will record here.
+                No direct renewal or addon payments made by this driver yet.
               </p>
             ) : (
               <div className="space-y-2">
-                {payments.map((p) => (
+                {filteredPayments.map((p) => (
                   <div key={p._id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs flex justify-between items-center">
                     <div>
                       <div className="font-bold text-slate-900">{p.purpose}</div>
@@ -856,21 +900,19 @@ export default function QRUserDetails() {
 
               <div className="pt-2 border-t border-slate-100">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 block mb-2">
-                  Emergency Contact 2:
+                  Emergency Contact 2 (Optional):
                 </span>
                 <div className="grid grid-cols-2 gap-3">
                   <input
                     type="text"
-                    required
-                    placeholder="Contact 2 Name"
+                    placeholder="Contact 2 Name (Optional)"
                     value={editVehicleForm.contact2Name}
                     onChange={(e) => setEditVehicleForm({ ...editVehicleForm, contact2Name: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900"
                   />
                   <input
                     type="tel"
-                    required
-                    placeholder="Contact 2 Mobile Number"
+                    placeholder="Contact 2 Mobile Number (Optional)"
                     value={editVehicleForm.contact2Phone}
                     onChange={(e) => setEditVehicleForm({ ...editVehicleForm, contact2Phone: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono"
@@ -961,17 +1003,6 @@ export default function QRUserDetails() {
                     value={editProfileForm.phone}
                     onChange={(e) => setEditProfileForm({ ...editProfileForm, phone: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    WhatsApp Number
-                  </label>
-                  <input
-                    type="tel"
-                    value={editProfileForm.whatsappNumber}
-                    onChange={(e) => setEditProfileForm({ ...editProfileForm, whatsappNumber: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 font-mono"
                   />
                 </div>
               </div>

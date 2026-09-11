@@ -3,6 +3,8 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import SafeDriveQRCode from '../components/SafeDriveQRCode';
 import DigitalCardModal from '../components/DigitalCardModal';
+import { toPng } from 'html-to-image';
+import { jsPDF } from 'jspdf';
 import {
   QrCode,
   Plus,
@@ -22,28 +24,34 @@ import {
   Check,
   Edit,
   Trash2,
-  Download
+  Download,
+  UserPlus,
+  Users,
+
 } from 'lucide-react';
 import { useAuth, API_BASE, PUBLIC_SCAN_BASE } from '../context/AuthContext';
+import { toast } from 'react-toastify';
+import Swal from 'sweetalert2';
 
 export default function QRManagement() {
   const navigate = useNavigate();
   const { authHeader } = useAuth();
 
-  // Active View Tab: 'GROUPS' | 'ALL_QRS'
-  const [activeTab, setActiveTab] = useState('GROUPS');
+  // Active View Tab: 'PHYSICAL_GROUPS' | 'DIGITAL_GROUPS' | 'ALL_QRS'
+  const [activeTab, setActiveTab] = useState(() => {
+    return sessionStorage.getItem('qrManagementActiveTab') || 'PHYSICAL_GROUPS';
+  });
+
+  useEffect(() => {
+    sessionStorage.setItem('qrManagementActiveTab', activeTab);
+  }, [activeTab]);
 
   // Groups Data
   const [groups, setGroups] = useState([]);
   const [loadingGroups, setLoadingGroups] = useState(false);
 
   // Individual QRs Data
-  const [qrs, setQrs] = useState([]);
-  const [loadingQrs, setLoadingQrs] = useState(false);
-  const [qrFilter, setQrFilter] = useState('ALL');
-  const [qrTagFilter, setQrTagFilter] = useState('ALL');
-  const [qrSearch, setQrSearch] = useState('');
-
+          
   // Generation Modal States
   const [showGenerateModal, setShowGenerateModal] = useState(false);
   const [tags, setTags] = useState([]);
@@ -52,11 +60,11 @@ export default function QRManagement() {
   const [qrTypes, setQrTypes] = useState([]);
   const [selectedQRType, setSelectedQRType] = useState('');
   const [selectedQRFormat, setSelectedQRFormat] = useState('PHYSICAL');
-  const [nextSeq, setNextSeq] = useState({ nextNumber: 1, formattedCode: 'SD001' });
+  const [nextSeq, setNextSeq] = useState({ nextNumber: 1, formattedCode: 'SD0001' });
   const [batchQuantity, setBatchQuantity] = useState(10);
   const [generatingBatch, setGeneratingBatch] = useState(false);
   const [batchSuccess, setBatchSuccess] = useState('');
-
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   // View Group Drawer Modal
   const [selectedGroup, setSelectedGroup] = useState(null);
   const [groupQRs, setGroupQRs] = useState([]);
@@ -78,6 +86,76 @@ export default function QRManagement() {
   const [selectedQRIds, setSelectedQRIds] = useState([]);
   const [showStickerDropdown, setShowStickerDropdown] = useState(false);
   const [showCutMarks, setShowCutMarks] = useState(true);
+  const [selectedBatches, setSelectedBatches] = useState([]);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [dealersList, setDealersList] = useState([]);
+  const [selectedDealer, setSelectedDealer] = useState('');
+  const [dealerSearch, setDealerSearch] = useState('');
+
+  const fetchDealers = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/admin/dealers`, authHeader);
+      if (res.data.success) {
+        setDealersList(res.data.dealers);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDealers();
+  }, []);
+
+  const handleToggleBatchSelect = (batchId) => {
+    if (selectedBatches.includes(batchId)) {
+      setSelectedBatches(selectedBatches.filter(id => id !== batchId));
+    } else {
+      setSelectedBatches([...selectedBatches, batchId]);
+    }
+  };
+
+  const handleAssignBatches = async () => {
+    if (!selectedDealer) {
+      alert('Please select a dealer');
+      return;
+    }
+
+    try {
+      const res = await axios.post(`${API_BASE}/admin/dealers/assign-qr`, {
+        dealerId: selectedDealer,
+        assignmentType: 'BATCHES',
+        batchIds: selectedBatches
+      }, authHeader);
+
+      if (res.data.success) {
+        alert(res.data.message);
+        setShowAssignModal(false);
+        setSelectedBatches([]);
+        setSelectedDealer('');
+        refreshAll();
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || 'Assignment failed');
+    }
+  };
+
+  const handleUnassignBatches = async () => {
+    try {
+      const res = await axios.post(`${API_BASE}/admin/dealers/unassign-qr`, {
+        assignmentType: 'SELECTED_BATCHES',
+        batchNames: selectedBatches
+      }, authHeader);
+      
+      if (res.data.success) {
+        toast.success(res.data.message || 'Successfully unassigned batches');
+        setSelectedBatches([]);
+        refreshAll();
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Unassign failed');
+    }
+  };
 
   const fetchTags = async () => {
     try {
@@ -107,6 +185,52 @@ export default function QRManagement() {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    setIsGeneratingPDF(true);
+    try {
+      let printArea = document.getElementById('pdf-content-area');
+      let isPaginated = !!printArea;
+
+      if (!printArea) {
+        printArea = document.getElementById('printable-area');
+      }
+
+      if (!printArea) return;
+
+      const pdf = new jsPDF({
+        orientation: (printPaperSize === 'A3_CARD_21' || printPaperSize === '13x19_SINGLE' || printPaperSize === '13x19_GRID_12' || printPaperSize === '13x19_GRID_18' || printPaperSize === 'A4_GRID_6' || printPaperSize === 'A3_GRID_8') ? 'portrait' : 'portrait',
+        unit: 'mm',
+        format: 'a3'
+      });
+
+      const pages = isPaginated ? printArea.querySelectorAll('.pdf-page-wrapper') : [printArea];
+
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+
+        const imgData = await toPng(page, {
+          pixelRatio: 8,
+          cacheBust: true,
+          skipFonts: false
+        });
+
+        if (i > 0) pdf.addPage();
+
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (page.offsetHeight * pdfWidth) / page.offsetWidth;
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      }
+
+      pdf.save(`SafeDrive_Stickers_${Date.now()}.pdf`);
+    } catch (err) {
+      console.error("Error generating PDF", err);
+      alert("Failed to generate PDF: " + (err.message || err));
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const fetchNextSeq = async () => {
     try {
       const res = await axios.get(`${API_BASE}/admin/qr/next-number`, authHeader);
@@ -132,27 +256,9 @@ export default function QRManagement() {
     }
   };
 
-  const fetchQRs = async () => {
-    setLoadingQrs(true);
-    try {
-      const tagQuery = qrTagFilter !== 'ALL' ? `&batchId=${qrTagFilter}` : '';
-      const res = await axios.get(
-        `${API_BASE}/admin/qr?status=${qrFilter}&search=${qrSearch}${tagQuery}&limit=100`,
-        authHeader
-      );
-      if (res.data.success) {
-        setQrs(res.data.qrs);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingQrs(false);
-    }
-  };
 
   const refreshAll = () => {
     fetchGroups();
-    fetchQRs();
     fetchTags();
     fetchQRTypes();
     fetchNextSeq();
@@ -160,7 +266,7 @@ export default function QRManagement() {
 
   useEffect(() => {
     refreshAll();
-  }, [qrFilter, qrTagFilter]);
+  }, []);
 
   // Handle Generate QR Batch (Only: QR For + Quantity + Group + Type: PHYSICAL / DIGITAL)
   const handleGenerateBatch = async (e) => {
@@ -201,7 +307,7 @@ export default function QRManagement() {
     setSelectedGroup(group);
     setLoadingGroupQRs(true);
     try {
-      const res = await axios.get(`${API_BASE}/admin/qr/group/${group.groupName}`, authHeader);
+      const res = await axios.get(`${API_BASE}/admin/qr/group/${group.groupName}?limit=1000`, authHeader);
       if (res.data.success) {
         setGroupQRs(res.data.qrs);
       }
@@ -220,33 +326,41 @@ export default function QRManagement() {
     }
     setPrintTitle(`Group: ${group.groupName} (${group.qrType || 'PHYSICAL'})`);
     try {
-      const res = await axios.get(`${API_BASE}/admin/qr/group/${group.groupName}`, authHeader);
+      const res = await axios.get(`${API_BASE}/admin/qr/group/${group.groupName}?limit=1000`, authHeader);
       if (res.data.success) {
         // Filter to ensure only physical stickers are passed to print
         const printableStickers = (res.data.qrs || []).filter((q) => q.qrType !== 'DIGITAL');
         if (printableStickers.length === 0) {
-          alert('No printable physical stickers found in this group.');
+          toast.error('No printable physical stickers found in this group.');
           return;
         }
         setPrintItems(printableStickers);
         setShowPrintModal(true);
       }
     } catch (err) {
-      alert('Failed to load group stickers for print.');
+      toast.error('Failed to load group stickers for print.');
     }
   };
 
-  // Toggle Batch Print Status
+  // Mark Batch Print Status (One-way: cannot be unmarked once printed)
   const handleTogglePrintStatus = async (group) => {
-    const nextStatus = !group.isPrinted;
-    if (!confirm(`Mark batch ${group.groupName} as ${nextStatus ? 'Printed' : 'Not Printed'}?`)) return;
+    if (group.isPrinted) return;
+    const result = await Swal.fire({
+      title: 'Mark as Printed?',
+      text: `Mark batch "${group.groupName}" as Printed? Once marked as printed, it cannot be unmarked.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      confirmButtonText: 'Yes, mark printed!'
+    });
+    if (!result.isConfirmed) return;
     try {
-      const res = await axios.put(`${API_BASE}/admin/qr/batch/${group.groupName}/print-status`, { isPrinted: nextStatus }, authHeader);
+      const res = await axios.put(`${API_BASE}/admin/qr/batch/${group.groupName}/print-status`, { isPrinted: true }, authHeader);
       if (res.data.success) {
         fetchGroups();
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Error updating batch print status');
+      toast.error(err.response?.data?.message || 'Error updating batch print status');
     }
   };
 
@@ -280,7 +394,7 @@ export default function QRManagement() {
         fetchGroups();
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Error editing batch');
+      toast.error(err.response?.data?.message || 'Error editing batch');
     } finally {
       setEditingBatch(false);
     }
@@ -290,11 +404,19 @@ export default function QRManagement() {
   const handleDeleteBatch = async (group) => {
     const soldOrActive = (group.soldCount || 0) + (group.activeCount || 0) + (group.suspendedCount || 0);
     if (soldOrActive > 0) {
-      alert('Cannot delete this batch because it contains sold or active stickers.');
+      toast.error('Cannot delete this batch because it contains sold or active stickers.');
       return;
     }
 
-    if (!confirm(`Are you absolutely sure you want to delete the batch "${group.groupName}"? This action cannot be undone.`)) return;
+    const result = await Swal.fire({
+      title: 'Delete Batch?',
+      text: `Are you absolutely sure you want to delete the batch "${group.groupName}"? This action cannot be undone.`,
+      icon: 'error',
+      showCancelButton: true,
+      confirmButtonColor: '#ef4444',
+      confirmButtonText: 'Yes, delete it!'
+    });
+    if (!result.isConfirmed) return;
 
     try {
       const res = await axios.delete(`${API_BASE}/admin/qr/batch/${group.groupName}`, authHeader);
@@ -302,14 +424,22 @@ export default function QRManagement() {
         fetchGroups();
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Error deleting batch');
+      toast.error(err.response?.data?.message || 'Error deleting batch');
     }
   };
 
   // Toggle QR Status (Active / Suspended)
   const handleToggleQRStatus = async (qr) => {
     const nextStatus = qr.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
-    if (!confirm(`Change status of ${qr.copyCode} to ${nextStatus}?`)) return;
+    const result = await Swal.fire({
+      title: 'Change Status?',
+      text: `Change status of ${qr.copyCode} to ${nextStatus}?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#10b981',
+      confirmButtonText: 'Yes, change it!'
+    });
+    if (!result.isConfirmed) return;
     try {
       const res = await axios.put(`${API_BASE}/admin/qr/${qr._id}/status`, { status: nextStatus }, authHeader);
       if (res.data.success) {
@@ -319,7 +449,7 @@ export default function QRManagement() {
         }
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Error updating status');
+      toast.error(err.response?.data?.message || 'Error updating status');
     }
   };
 
@@ -341,6 +471,29 @@ export default function QRManagement() {
         </div>
 
         <div className="flex items-center space-x-2.5">
+          {selectedBatches.length > 0 && (
+            <>
+              {groups.some(g => selectedBatches.includes(g.groupName) && g.inStockCount > 0) && (
+                <button
+                  onClick={() => setShowAssignModal(true)}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-[#16A34A] to-[#14532d] hover:from-[#15803d] hover:to-[#166534] text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md shadow-[#16A34A]/20 transition active:scale-[0.98]"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>Assign {selectedBatches.length} Batches</span>
+                </button>
+              )}
+              {groups.some(g => selectedBatches.includes(g.groupName) && g.assignedCount > 0) && (
+                <button
+                  onClick={handleUnassignBatches}
+                  className="flex items-center space-x-2 bg-gradient-to-r from-amber-600 to-amber-800 hover:from-amber-700 hover:to-amber-900 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition active:scale-[0.98]"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Unassign {selectedBatches.length} Batches</span>
+                </button>
+              )}
+            </>
+          )}
+
           <button
             onClick={() => {
               setBatchSuccess('');
@@ -358,188 +511,230 @@ export default function QRManagement() {
             title="Refresh"
             className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-600 border border-slate-200 p-2.5 rounded-xl text-xs font-semibold shadow-2xs transition"
           >
-            <RefreshCw className={`w-4 h-4 text-[#1D56A5] ${loadingGroups || loadingQrs ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 text-[#1D56A5] ${loadingGroups ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
       {/* 2. VIEW SWITCH TABS */}
-      <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200 w-fit">
+      <div className="flex bg-slate-50 p-1.5 rounded-full border border-slate-200 w-fit gap-1 shadow-sm">
         <button
-          onClick={() => setActiveTab('GROUPS')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${activeTab === 'GROUPS'
-            ? 'bg-[#1D56A5] text-white shadow-2xs'
-            : 'text-slate-600 hover:text-slate-900'
+          onClick={() => setActiveTab('PHYSICAL_GROUPS')}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-full text-sm font-bold transition ${activeTab === 'PHYSICAL_GROUPS' || activeTab === 'GROUPS'
+            ? 'bg-[#1D56A5] text-white shadow-md'
+            : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
             }`}
         >
           <FolderKanban className="w-4 h-4" />
-          <span>QR Groups & Batches ({groups.length})</span>
+          <span>Physical Batches ({groups.filter(g => g.qrType !== 'DIGITAL' && !g.groupName?.includes('DIGITAL')).length})</span>
         </button>
 
         <button
-          onClick={() => setActiveTab('ALL_QRS')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${activeTab === 'ALL_QRS'
-            ? 'bg-[#1D56A5] text-white shadow-2xs'
-            : 'text-slate-600 hover:text-slate-900'
+          onClick={() => setActiveTab('DIGITAL_GROUPS')}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-full text-sm font-bold transition ${activeTab === 'DIGITAL_GROUPS'
+            ? 'bg-[#1D56A5] text-white shadow-md'
+            : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'
             }`}
         >
-          <Layers className="w-4 h-4" />
-          <span>All Individual Stickers ({qrs.length})</span>
+          <FolderKanban className="w-4 h-4" />
+          <span>Digital Batches ({groups.filter(g => g.qrType === 'DIGITAL' || g.groupName?.includes('DIGITAL')).length})</span>
+        </button>
+
+        
+
+        <button
+          onClick={() => { setActiveTab('DEALER_INVENTORY'); setCurrentPage(1); fetchDealers(); }}
+          className={`flex items-center space-x-2 px-5 py-2.5 rounded-full text-sm font-bold transition ${activeTab === 'DEALER_INVENTORY'
+            ? 'bg-[#1D56A5] text-white shadow-md'
+            : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+        >
+          <Users className="w-4 h-4" /> <span>Dealer Inventory</span>
         </button>
       </div>
 
       {/* 3. TAB 1: QR GROUPS / BATCHES OVERVIEW */}
-      {activeTab === 'GROUPS' && (
+      {(activeTab === 'PHYSICAL_GROUPS' || activeTab === 'DIGITAL_GROUPS' || activeTab === 'GROUPS') && (
         <div className="space-y-4">
           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50/80 text-slate-500 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
                   <tr>
+                    <th className="px-6 py-3.5 w-12 text-center">Select</th>
                     <th className="px-6 py-3.5">Group / Batch Name</th>
                     <th className="px-6 py-3.5">QR For</th>
-                    <th className="px-6 py-3.5">Total Sets & Stickers</th>
+                    <th className="px-6 py-3.5">Total QRs</th>
                     <th className="px-6 py-3.5">Status Breakdown</th>
+                    <th className="px-6 py-3.5">Created Date</th>
                     <th className="px-6 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {groups.length === 0 ? (
+                  {groups.filter(g => activeTab === 'DIGITAL_GROUPS' ? (g.qrType === 'DIGITAL' || g.groupName?.includes('DIGITAL')) : (g.qrType !== 'DIGITAL' && !g.groupName?.includes('DIGITAL'))).length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="px-6 py-12 text-center text-slate-400 text-xs">
-                        {loadingGroups ? 'Loading groups...' : 'No QR groups found. Click "Generate QR Batch" to create one.'}
+                      <td colSpan="6" className="px-6 py-12 text-center text-slate-400 text-xs">
+                        {loadingGroups ? 'Loading groups...' : 'No QR groups found in this category.'}
                       </td>
                     </tr>
                   ) : (
-                    groups.map((g) => (
-                      <tr key={g.groupName} className="hover:bg-[#E9DFEE]/20 transition">
-                        {/* 1. Group Name */}
-                        <td className="px-6 py-3.5">
-                          <div
-                            onClick={() => navigate(`/qr/group/${g.groupName}`)}
-                            className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition"
-                          >
-                            <span className="w-2.5 h-2.5 rounded-full bg-[#1D56A5]"></span>
-                            <span className="font-mono font-black text-slate-900 text-sm hover:text-[#1D56A5]">{g.groupName}</span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 font-mono mt-0.5">
-                            Range: {g.firstProduct} to {g.lastProduct}
-                          </div>
-                        </td>
+                    groups.filter(g => activeTab === 'DIGITAL_GROUPS' ? (g.qrType === 'DIGITAL' || g.groupName?.includes('DIGITAL')) : (g.qrType !== 'DIGITAL' && !g.groupName?.includes('DIGITAL'))).map((g) => {
+                      const isSelected = selectedBatches.includes(g.groupName);
+                      const isDigital = g.qrType === 'DIGITAL' || g.groupName?.includes('DIGITAL');
+                      const showCheckbox = !isDigital && (g.inStockCount > 0 || g.assignedCount > 0);
 
-                        {/* 2. QR For */}
-                        <td className="px-6 py-3.5">
-                          <span className="bg-[#E9DFEE] text-[#1D56A5] font-bold text-xs px-2.5 py-1 rounded-lg">
-                            🏷️ {g.qrFor || g.qrType || 'Car'}
-                          </span>
-                        </td>
+                      return (
+                        <tr key={g.groupName} className={`transition ${isSelected ? 'bg-[#16A34A]/10' : 'hover:bg-[#E9DFEE]/20'}`}>
+                          <td className="px-6 py-3.5 text-center cursor-pointer" onClick={() => showCheckbox && handleToggleBatchSelect(g.groupName)}>
+                            <div className="flex justify-center items-center">
+                              {showCheckbox && (
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => handleToggleBatchSelect(g.groupName)}
+                                  className="w-4 h-4 text-[#16A34A] rounded border-slate-300 focus:ring-[#16A34A]"
+                                />
+                              )}
+                            </div>
+                          </td>
+                          {/* 1. Group Name */}
+                          <td className="px-6 py-3.5">
+                            <div
+                              onClick={() => navigate(`/qr/group/${g.groupName}`)}
+                              className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition"
+                            >
+                              <span className="font-mono font-black text-slate-900 text-sm hover:text-[#1D56A5]">{g.groupName}</span>
+                            </div>
+                            <div className="text-[10px] text-slate-400 font-mono mt-0.5">
+                              Range: {g.firstProduct} to {g.lastProduct}
+                            </div>
+                          </td>
 
-                        {/* 3. Total Sets & Stickers */}
-                        <td className="px-6 py-3.5">
-                          <div className="font-bold text-slate-900 text-xs">{g.totalSets} Sets</div>
-                          <div className="text-[10px] text-slate-500 font-mono">⚡ {g.totalStickers} Physical Stickers</div>
-                        </td>
-
-                        {/* 4. Status Breakdown */}
-                        <td className="px-6 py-3.5">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {g.qrType === 'DIGITAL' || g.groupName?.includes('DIGITAL') || (g.generatedCount > 0 && (g.inStockCount || 0) === 0) ? (
-                              <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-[10px] px-2 py-0.5 rounded-full">
-                                {g.generatedCount || g.totalSets || 0} Allotted (Digital)
+                          {/* 2. QR For */}
+                          <td className="px-6 py-3.5">
+                            {g.qrType === 'DIGITAL' || g.groupName?.includes('DIGITAL') ? (
+                              <span className="bg-indigo-50 text-indigo-700 font-bold text-xs px-2.5 py-1 rounded-lg border border-indigo-100">
+                                Digital
                               </span>
                             ) : (
-                              <span className="bg-blue-50 text-[#1D56A5] border border-[#1D56A5]/20 font-bold text-[10px] px-2 py-0.5 rounded-full">
-                                {g.inStockCount || 0} In Stock
+                              <span className="bg-[#E9DFEE] text-[#1D56A5] font-bold text-xs px-2.5 py-1 rounded-lg">
+                                {g.qrFor || g.qrType || 'Car'}
                               </span>
                             )}
-                            <span className="bg-emerald-50 text-[#259A3A] border border-[#259A3A]/20 font-bold text-[10px] px-2 py-0.5 rounded-full">
-                              {g.activeCount || 0} Active
-                            </span>
-                            {g.soldCount > 0 && g.qrType !== 'DIGITAL' && (
-                              <span className="bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] px-2 py-0.5 rounded-full">
-                                {g.soldCount} Sold
-                              </span>
-                            )}
-                            {g.suspendedCount > 0 && (
-                              <span className="bg-red-50 text-[#E94E1A] border border-[#E94E1A]/20 font-bold text-[10px] px-2 py-0.5 rounded-full">
-                                {g.suspendedCount} Suspended
-                              </span>
-                            )}
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* 5. Created Date */}
-                        <td className="px-6 py-3.5 text-slate-500 text-xs">
-                          {g.createdAt ? new Date(g.createdAt).toLocaleDateString('en-GB') : '—'}
-                        </td>
+                          {/* 3. Total QRs */}
+                          <td className="px-6 py-3.5">
+                            <div className="font-bold text-slate-900 text-xs">{g.totalSets} QRs</div>
+                          </td>
 
-                        {/* 6. Actions */}
-                        <td className="px-6 py-3.5 align-middle">
-                          <div className="flex flex-col items-end gap-2.5">
-
-                            {/* Top Row: Details, Edit, Delete */}
-                            <div className="flex flex-wrap justify-end items-center gap-2">
-                              <button
-                                onClick={() => navigate(`/qr/group/${g.groupName}`)}
-                                className="text-xs bg-[#1D56A5]/10 hover:bg-[#1D56A5] hover:text-white text-[#1D56A5] border border-[#1D56A5]/30 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                <span>View Details</span>
-                              </button>
-
-                              <button
-                                onClick={() => handleOpenEditBatch(g)}
-                                className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
-                              >
-                                <Edit className="w-3.5 h-3.5" />
-                                <span>Edit</span>
-                              </button>
-
-                              {((g.soldCount || 0) + (g.activeCount || 0) + (g.suspendedCount || 0)) === 0 && (
-                                <button
-                                  onClick={() => handleDeleteBatch(g)}
-                                  className="text-xs bg-red-50 hover:bg-red-500 hover:text-white text-red-600 border border-red-200 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                  <span>Delete</span>
-                                </button>
-                              )}
-                            </div>
-
-                            {/* Bottom Row: Print Actions */}
-                            <div className="flex flex-wrap justify-end items-center gap-2">
-                              {g.qrType === 'DIGITAL' ? (
-                                <span className="text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-lg inline-flex items-center space-x-1">
-                                  💻 Digital (No Print)
+                          {/* 4. Status Breakdown */}
+                          <td className="px-6 py-3.5">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {g.qrType === 'DIGITAL' || g.groupName?.includes('DIGITAL') || (g.generatedCount > 0 && (g.inStockCount || 0) === 0) ? (
+                                <span className="bg-indigo-50 text-indigo-700 border border-indigo-200 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                                  {g.generatedCount || g.totalSets || 0} Allotted (Digital)
                                 </span>
                               ) : (
-                                <>
-                                  <button
-                                    onClick={() => handleTogglePrintStatus(g)}
-                                    className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center space-x-1 shadow-2xs ${g.isPrinted
-                                      ? 'bg-[#259A3A]/10 text-[#259A3A] border-[#259A3A]/30 hover:bg-[#259A3A] hover:text-white'
-                                      : 'bg-amber-50 text-amber-600 border-amber-300 hover:bg-amber-500 hover:text-white'
-                                      }`}
-                                  >
-                                    {g.isPrinted ? <CheckCircle2 className="w-3.5 h-3.5" /> : <Printer className="w-3.5 h-3.5" />}
-                                    <span>{g.isPrinted ? 'Printed' : 'Not Printed'}</span>
-                                  </button>
-
-                                  <button
-                                    onClick={() => handlePrintGroup(g)}
-                                    className="text-xs bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1 shadow-2xs"
-                                  >
-                                    <Printer className="w-3.5 h-3.5 text-[#1D56A5]" />
-                                    <span>Print Sheet</span>
-                                  </button>
-                                </>
+                                (g.inStockCount || 0) > 0 && (
+                                  <span className="bg-blue-50 text-[#1D56A5] border border-[#1D56A5]/20 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                                    {g.inStockCount} In Stock
+                                  </span>
+                                )
+                              )}
+                              {(g.activeCount || 0) > 0 && (
+                                <span className="bg-emerald-50 text-[#259A3A] border border-[#259A3A]/20 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                                  {g.activeCount} Active
+                                </span>
+                              )}
+                              {(g.assignedCount || 0) > 0 && (
+                                <span className="bg-purple-50 text-purple-700 border border-purple-200 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                                  {g.assignedCount} Assigned
+                                </span>
+                              )}
+                              {(g.soldCount || 0) > 0 && g.qrType !== 'DIGITAL' && (
+                                <span className="bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                                  {g.soldCount} Sold
+                                </span>
+                              )}
+                              {(g.suspendedCount || 0) > 0 && (
+                                <span className="bg-red-50 text-[#E94E1A] border border-[#E94E1A]/20 font-bold text-[10px] px-2 py-0.5 rounded-full">
+                                  {g.suspendedCount} Suspended
+                                </span>
                               )}
                             </div>
+                          </td>
 
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                          {/* 5. Created Date */}
+                          <td className="px-6 py-3.5 text-slate-500 text-xs">
+                            {g.createdAt ? new Date(g.createdAt).toLocaleDateString('en-GB') : '—'}
+                          </td>
+
+                          {/* 6. Actions */}
+                          <td className="px-6 py-3.5 align-middle">
+                            <div className="flex flex-col items-end gap-2.5">
+
+                              {/* Top Row: Details, Edit, Delete */}
+                              <div className="flex flex-wrap justify-end items-center gap-2">
+                                <button
+                                  onClick={() => navigate(`/qr/group/${g.groupName}`)}
+                                  className="group relative p-2 text-[#1D56A5] hover:bg-[#1D56A5] hover:text-white bg-[#1D56A5]/10 rounded-lg transition shadow-2xs"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-200 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg pointer-events-none z-50 whitespace-nowrap">
+                                    View Details
+                                  </span>
+                                </button>
+
+                                {((g.soldCount || 0) + (g.activeCount || 0) + (g.suspendedCount || 0)) === 0 && (
+                                  <button
+                                    onClick={() => handleDeleteBatch(g)}
+                                    className="group relative p-2 text-red-500 hover:bg-red-500 hover:text-white bg-red-50 rounded-lg transition shadow-2xs"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-200 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg pointer-events-none z-50 whitespace-nowrap">
+                                      Delete Batch
+                                    </span>
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Bottom Row: Print Actions */}
+                              <div className="flex flex-wrap justify-end items-center gap-2">
+                                {g.qrType === 'DIGITAL' || g.groupName?.includes('DIGITAL') ? null : (
+                                  <>
+                                    <button
+                                      disabled={g.isPrinted}
+                                      onClick={() => !g.isPrinted && handleTogglePrintStatus(g)}
+                                      className={`group relative p-2 rounded-lg transition shadow-2xs ${g.isPrinted
+                                        ? 'text-[#259A3A] bg-[#259A3A]/10 cursor-default opacity-90'
+                                        : 'text-amber-600 bg-amber-50 hover:bg-amber-500 hover:text-white cursor-pointer'
+                                        }`}
+                                      title={g.isPrinted ? "Batch Already Printed" : "Mark Printed"}
+                                    >
+                                      {g.isPrinted ? <CheckCircle2 className="w-4 h-4" /> : <Printer className="w-4 h-4" />}
+                                      <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-200 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg pointer-events-none z-50 whitespace-nowrap">
+                                        {g.isPrinted ? "Printed (Locked)" : "Mark Printed"}
+                                      </span>
+                                    </button>
+
+                                    <button
+                                      onClick={() => handlePrintGroup(g)}
+                                      className="group relative p-2 text-slate-700 bg-slate-100 hover:bg-slate-800 hover:text-white rounded-lg transition shadow-2xs"
+                                    >
+                                      <Printer className="w-4 h-4" />
+                                      <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-200 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg pointer-events-none z-50 whitespace-nowrap">
+                                        Print Sheet
+                                      </span>
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })
                   )}
                 </tbody>
               </table>
@@ -549,152 +744,87 @@ export default function QRManagement() {
       )}
 
       {/* 4. TAB 2: ALL INDIVIDUAL STICKERS TABLE */}
-      {activeTab === 'ALL_QRS' && (
-        <div className="space-y-4">
-          {/* Search & Filters */}
-          <div className="bg-white border border-slate-200 p-3 rounded-2xl shadow-xs flex flex-col md:flex-row gap-3 items-center justify-between">
-            <div className="relative w-full md:w-80">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search Sticker Code (e.g. SD001C1)..."
-                value={qrSearch}
-                onChange={(e) => setQrSearch(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && fetchQRs()}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#1D56A5] transition"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
-              <select
-                value={qrTagFilter}
-                onChange={(e) => setQrTagFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-200 text-xs font-semibold rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:border-[#1D56A5]"
-              >
-                <option value="ALL">All Groups / Tags</option>
-                {tags.map((t) => (
-                  <option key={t._id} value={t.name}>{t.name}</option>
-                ))}
-              </select>
-
-              <div className="flex bg-slate-100 p-1 rounded-xl space-x-1 border border-slate-200">
-                {['ALL', 'ACTIVE', 'IN STOCK', 'SOLD', 'SUSPENDED'].map((st) => (
-                  <button
-                    key={st}
-                    onClick={() => setQrFilter(st)}
-                    className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition whitespace-nowrap ${qrFilter === st
-                      ? 'bg-[#1D56A5] text-white shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                      }`}
-                  >
-                    {st}
-                  </button>
-                ))}
-              </div>
-            </div>
+      {/* --- Tab: Dealer Inventory --- */}
+      {activeTab === 'DEALER_INVENTORY' && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 mt-6 overflow-hidden">
+          <div className="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center">
+            <h2 className="font-bold text-slate-800 flex items-center">
+              <Users className="w-5 h-5 mr-2 text-[#16A34A]" /> Dealer Tag Inventory
+            </h2>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50/80 text-slate-500 uppercase text-[11px] font-bold tracking-wider border-b border-slate-200">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-bold text-slate-500 uppercase">
+                <tr>
+                  <th className="px-6 py-4">Dealer Name</th>
+                  <th className="px-6 py-4">Shop Name</th>
+                  <th className="px-6 py-4">Phone / Email</th>
+                  <th className="px-6 py-4">Total QRs Assigned</th>
+                  <th className="px-6 py-4">Active QRs</th>
+                  <th className="px-6 py-4">Pending QRs</th>
+                  <th className="px-6 py-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {dealersList.length === 0 ? (
                   <tr>
-                    <th className="px-6 py-3.5">QR Code</th>
-                    <th className="px-6 py-3.5">Status</th>
-                    <th className="px-6 py-3.5">Group / Tag</th>
-                    <th className="px-6 py-3.5">Expire</th>
-                    <th className="px-6 py-3.5 text-right">Action</th>
+                    <td colSpan="6" className="text-center py-10 text-slate-500">
+                      No dealers found.
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {qrs.length === 0 ? (
-                    <tr>
-                      <td colSpan="5" className="px-6 py-12 text-center text-slate-400 text-xs">
-                        {loadingQrs ? 'Loading inventory...' : 'No QR codes found.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    qrs.map((qr) => (
-                      <tr key={qr._id} className="hover:bg-[#E9DFEE]/20 transition">
-                        <td className="px-6 py-3.5">
-                          <Link
-                            to={`/qr/${qr._id}`}
-                            className="flex items-center space-x-2 font-mono font-bold text-slate-900 text-sm hover:text-[#1D56A5] transition group"
-                          >
-                            <QrCode className="w-4 h-4 text-[#1D56A5] group-hover:scale-110 transition" />
-                            <span>{qr.copyCode}</span>
-                          </Link>
-                          {qr.securityCode && (
-                            <span className="inline-block mt-0.5 font-mono text-[10px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded font-bold border border-amber-300">
-                              PIN: {qr.securityCode}
-                            </span>
-                          )}
-                        </td>
+                ) : (
+                  dealersList.map(dealer => {
+                    const total = dealer.totalQRs || 0;
+                    const active = dealer.activeQRs || 0;
+                    const pending = total - active;
 
-                        <td className="px-6 py-3.5">
-                          <span
-                            className={`inline-flex items-center space-x-1.5 text-[11px] font-bold px-2.5 py-0.5 rounded-full ${qr.status === 'ACTIVE'
-                              ? 'bg-emerald-50 text-[#259A3A] border border-[#259A3A]/30'
-                              : qr.status === 'IN STOCK'
-                                ? 'bg-blue-50 text-[#1D56A5] border border-[#1D56A5]/30'
-                                : qr.status === 'SOLD'
-                                  ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                  : 'bg-red-50 text-[#E94E1A] border border-[#E94E1A]/30'
-                              }`}
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
-                            <span>{qr.status}</span>
+                    return (
+                      <tr key={dealer._id} className="hover:bg-slate-50/80 transition">
+                        <td className="px-6 py-4 font-bold text-slate-800">
+                          {dealer.name}
+                        </td>
+                        <td className="px-6 py-4 text-slate-600 font-medium">
+                          {dealer.shopName || '—'}
+                        </td>
+                        <td className="px-6 py-4 text-xs">
+                          <div><span className="font-bold">P:</span> {dealer.phone}</div>
+                          {dealer.email && <div><span className="font-bold">E:</span> {dealer.email}</div>}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full font-bold text-xs border border-blue-100">
+                            {total} Total
                           </span>
                         </td>
-
-                        <td className="px-6 py-3.5">
-                          <span className="bg-[#E9DFEE]/70 text-[#1D56A5] border border-[#1D56A5]/25 text-xs font-mono font-bold px-2.5 py-1 rounded-lg inline-block">
-                            {qr.batchId}
+                        <td className="px-6 py-4">
+                          <span className="bg-emerald-50 text-[#259A3A] px-2.5 py-1 rounded-full font-bold text-xs border border-[#259A3A]/20">
+                            {active} Active
                           </span>
                         </td>
-
-                        <td className="px-6 py-3.5 text-slate-600 text-xs font-medium">
-                          {qr.expiryDate ? new Date(qr.expiryDate).toLocaleDateString('en-GB') : '—'}
+                        <td className="px-6 py-4">
+                          <span className="bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full font-bold text-xs border border-amber-200">
+                            {pending} Pending
+                          </span>
                         </td>
-
-                        <td className="px-6 py-3.5 text-right space-x-2">
+                        <td className="px-6 py-4 text-right">
                           <Link
-                            to={`/qr/${qr._id}`}
-                            className="text-xs bg-[#1D56A5]/10 hover:bg-[#1D56A5] hover:text-white text-[#1D56A5] border border-[#1D56A5]/30 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
+                            to={`/dealer/${dealer._id}`}
+                            className="inline-flex items-center justify-center p-2 bg-blue-50 text-[#1D56A5] hover:bg-blue-100 rounded-lg transition"
+                            title="View Details"
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>View</span>
+                            <Eye className="w-4 h-4" />
                           </Link>
-
-                          {qr.qrType === 'DIGITAL' && (
-                            <button
-                              onClick={() => setDownloadDigitalQR(qr)}
-                              className="text-xs bg-indigo-50 hover:bg-indigo-600 hover:text-white text-indigo-700 border border-indigo-200 font-bold px-3 py-1.5 rounded-lg transition inline-flex items-center space-x-1"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                              <span>Download</span>
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => handleToggleQRStatus(qr)}
-                            className={`text-xs font-bold px-3 py-1.5 rounded-lg border transition inline-flex items-center space-x-1 ${qr.status === 'SUSPENDED'
-                              ? 'bg-[#259A3A]/10 hover:bg-[#259A3A] hover:text-white text-[#259A3A] border-[#259A3A]/30'
-                              : 'bg-[#E94E1A]/10 hover:bg-[#E94E1A] hover:text-white text-[#E94E1A] border-[#E94E1A]/30'
-                              }`}
-                          >
-                            <span>{qr.status === 'SUSPENDED' ? 'Activate' : 'Suspend'}</span>
-                          </button>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
+
 
       {/* 5. GENERATE QR BATCH MODAL (Clean: QR Type, Quantity, Group Name) */}
       {showGenerateModal && (
@@ -756,28 +886,13 @@ export default function QRManagement() {
                     const isVeh = t.isVehicle !== false && t.category !== 'NON_VEHICLE';
                     return (
                       <option key={t._id} value={t.name}>
-                        {isVeh ? '🚗' : '🧳'} {t.name} ({t.copiesPerSet || 2} Stickers per Set) — {isVeh ? 'Vehicle Plate' : '4-Digit PIN'}
+                        {isVeh ? '🚗' : '🧳'} {t.name} — {isVeh ? 'Vehicle Plate' : 'Tag ID (Last 4)'}
                       </option>
                     );
                   })}
                 </select>
 
-                {/* Helper notice based on selected type */}
-                {(() => {
-                  const currentTypeObj = qrTypes.find(t => t.name === selectedQRType);
-                  const isVeh = currentTypeObj ? (currentTypeObj.isVehicle !== false && currentTypeObj.category !== 'NON_VEHICLE') : true;
-                  return isVeh ? (
-                    <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[10px] font-medium text-emerald-800 flex items-center space-x-1.5">
-                      <span>🚗</span>
-                      <span><strong>Vehicle Tag:</strong> Citizen verification will check last 4 digits of the physical number plate.</span>
-                    </div>
-                  ) : (
-                    <div className="mt-1.5 p-2 bg-amber-50 border border-amber-200 rounded-lg text-[10px] font-medium text-amber-900 flex items-center space-x-1.5">
-                      <span>🧳</span>
-                      <span><strong>Non-Vehicle Item:</strong> A unique <strong>4-digit Security PIN</strong> will be auto-generated and printed on the tag.</span>
-                    </div>
-                  );
-                })()}
+
               </div>
 
               {/* 1.5 QR Type (Fixed: PHYSICAL / DIGITAL) */}
@@ -840,10 +955,10 @@ export default function QRManagement() {
                 />
               </div>
 
-              {/* 3. Quantity of Sets */}
+              {/* 3. Quantity to Generate */}
               <div>
                 <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Quantity of Sets to Generate *
+                  Quantity to Generate *
                 </label>
                 <input
                   type="number"
@@ -851,12 +966,9 @@ export default function QRManagement() {
                   onChange={(e) => setBatchQuantity(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm font-bold focus:bg-white focus:outline-none focus:border-[#1D56A5]"
                   min="1"
-                  max="500"
+                  max="1000"
                   required
                 />
-                <div className="text-[11px] text-[#1D56A5] font-semibold mt-1">
-                  ⚡ <strong>{batchQuantity} sets</strong> × {currentCopiesPerSet} copies = <strong className="text-slate-900">{batchQuantity * currentCopiesPerSet} physical stickers</strong> ({currentCopiesPerSet === 1 ? 'C1' : `C1 to C${currentCopiesPerSet}`})
-                </div>
               </div>
             </form>
 
@@ -878,7 +990,7 @@ export default function QRManagement() {
                 {generatingBatch ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
                 ) : (
-                  <span>Generate {batchQuantity * currentCopiesPerSet} Stickers ({selectedQRType})</span>
+                  <span>Generate {batchQuantity} QRs ({selectedQRType})</span>
                 )}
               </button>
             </div>
@@ -1122,7 +1234,9 @@ export default function QRManagement() {
               ? '@page { size: 13in 19in portrait; margin: 0.35in; }'
               : printPaperSize === 'A3_GRID_8'
                 ? '@page { size: A3 portrait; margin: 10mm; }'
-                : '@page { size: A4 portrait; margin: 8mm; }'
+                : printPaperSize === 'A3_CARD_21'
+                  ? '@page { size: A3 portrait; margin: 0; }'
+                  : '@page { size: A4 portrait; margin: 8mm; }'
             }
             }
           `}</style>
@@ -1214,11 +1328,16 @@ export default function QRManagement() {
                 {/* Action Buttons */}
                 <div className="flex items-center space-x-2 self-end">
                   <button
-                    onClick={() => window.print()}
-                    className="bg-[#1D56A5] hover:bg-[#164382] text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-[#1D56A5]/25 transition flex items-center space-x-1.5 active:scale-95"
+                    onClick={handleDownloadPDF}
+                    disabled={isGeneratingPDF}
+                    className="bg-[#1D56A5] hover:bg-[#164382] text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md shadow-[#1D56A5]/25 transition flex items-center space-x-1.5 active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed"
                   >
-                    <Printer className="w-4 h-4" />
-                    <span>Print Now</span>
+                    {isGeneratingPDF ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Printer className="w-4 h-4" />
+                    )}
+                    <span>{isGeneratingPDF ? 'Generating PDF...' : 'Download PDF'}</span>
                   </button>
                   <button
                     onClick={() => setShowPrintModal(false)}
@@ -1289,7 +1408,7 @@ export default function QRManagement() {
                           </div>
                           <p className="text-xs sm:text-sm text-slate-600 font-semibold max-w-md mb-6">
                             {qr.securityCode
-                              ? 'Scan to contact item owner securely (Requires 4-Digit PIN printed above)'
+                              ? 'Scan to contact item owner securely'
                               : 'To contact vehicle owner instantly & securely without sharing personal mobile number'}
                           </p>
 
@@ -1307,52 +1426,74 @@ export default function QRManagement() {
 
                 // 2. NEW CARD FORMAT (9.2cm x 5.49cm)
                 if (printPaperSize === 'A3_CARD_21') {
+                  const itemsPerPage = 21;
+                  const totalPages = Math.ceil(displayItems.length / itemsPerPage);
+
                   return (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 print:gap-x-0 print:gap-y-1 place-items-center" style={{ width: '100%', maxWidth: '29.7cm', margin: '0 auto' }}>
-                      {displayItems.map((qr) => (
-                        <div
-                          key={qr._id}
-                          className="relative print-no-break overflow-hidden shadow-sm border border-slate-200 print:border print:border-dashed print:border-slate-400 print:shadow-none"
-                          style={{
-                            width: '9.2cm',
-                            height: '5.49cm',
-                            backgroundImage: `url('/card_bg.png')`,
-                            backgroundSize: '100% 100%',
-                            backgroundRepeat: 'no-repeat',
-                          }}
-                        >
-                          {/* QR Code container tightly bound to the white rounded box in the image */}
-                          <div
-                            className="absolute flex items-center justify-center bg-transparent z-10"
-                            style={{
-                              left: '58%',
-                              top: '9%',
-                              width: '37%',
-                              height: '66%',
-                            }}
-                          >
-                            <SafeDriveQRCode
-                              value={`${PUBLIC_SCAN_BASE}/${qr.publicToken}`}
-                              size={150}
-                              className="w-full h-full object-contain"
-                              includeMargin={false}
-                            />
-                            
-                            {/* ID or PIN Badge explicitly pinned to bottom center of this box */}
-                            <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
-                              {qr.securityCode ? (
-                                <div className="bg-[#259A3A] text-white font-mono font-black text-[7px] px-1.5 py-0.5 rounded-sm shadow-xs border border-[#259A3A]/50 whitespace-nowrap">
-                                  PIN: {qr.securityCode}
-                                </div>
-                              ) : (
-                                <div className="bg-[#259A3A] text-white font-mono font-black text-[7px] px-1.5 py-0.5 rounded-sm shadow-xs border border-[#259A3A]/50 whitespace-nowrap">
-                                  ID: {qr.copyCode}
-                                </div>
-                              )}
+                    <div id="pdf-content-area" className="flex flex-col space-y-12">
+                      {Array.from({ length: totalPages }).map((_, pageIndex) => {
+                        const pageItems = displayItems.slice(pageIndex * itemsPerPage, (pageIndex + 1) * itemsPerPage);
+                        return (
+                          <div key={pageIndex} className="pdf-page-wrapper print-page-break relative pt-8 print:pt-0">
+                            {/* Sheet indicator */}
+                            <div className="absolute top-0 left-0 right-0 text-center font-bold text-slate-500 text-sm print:hidden">
+                              Sheet {pageIndex + 1} of {totalPages} ({pageItems.length} Stickers)
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 place-items-center mt-6 print:mt-0" style={{ width: '100%', maxWidth: '29.7cm', margin: '0 auto', gap: '6px' }}>
+                              {pageItems.map((qr) => {
+                                const typeInfo = qrTypes.find(t => t._id === qr.qrTypeId || t.name === (qr.qrFor || qr.qrType));
+                                const bgImage = typeInfo?.templateImage || '/card_bg.png';
+                                return (
+                                  <div key={qr._id} className="border border-dashed border-slate-400 print:border-slate-800 print-no-break" style={{ padding: '0' }}>
+                                    <div
+                                      className="relative overflow-hidden shadow-sm print:shadow-none"
+                                      style={{
+                                        width: '9.2cm',
+                                        height: '5.49cm',
+                                        backgroundImage: `url('${bgImage}')`,
+                                        backgroundSize: '100% 100%',
+                                        backgroundRepeat: 'no-repeat',
+                                      }}
+                                    >
+                                      {/* QR Code container tightly bound to the white rounded box in the image */}
+                                      <div
+                                        className="absolute flex items-center justify-center bg-transparent z-10"
+                                        style={{
+                                          left: '58%',
+                                          top: '9%',
+                                          width: '37%',
+                                          height: '60%',
+                                        }}
+                                      >
+                                        <SafeDriveQRCode
+                                          value={`${PUBLIC_SCAN_BASE}/${qr.publicToken}`}
+                                          size={150}
+                                          className="w-full h-full object-contain"
+                                          includeMargin={false}
+                                        />
+                                      </div>
+
+                                      {/* ID or PIN Badge - Pinned to the top box on the card */}
+                                      <div
+                                        className="absolute z-20"
+                                        style={{
+                                          left: '76.5%', // Left/Right adjust (76.5% is center of the right white box)
+                                          top: '-1%',     // Up/Down adjust (kam karne se upar, badhane se neeche jayega)
+                                          transform: 'translateX(-50%)' // Keeps it perfectly centered on the 'left' point
+                                        }}
+                                      >
+                                        <div className="text-black font-mono font-black text-[14px] px-1.5 py-0.5 whitespace-nowrap">
+                                          ID:{qr.copyCode}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 }
@@ -1390,12 +1531,7 @@ export default function QRManagement() {
                           {qr.copyCode}
                         </div>
 
-                        {/* 4-Digit PIN badge if Non-Vehicle */}
-                        {qr.securityCode && (
-                          <div className="bg-amber-100 text-amber-950 border border-amber-300 font-mono font-black text-xs px-2.5 py-0.5 rounded-md mb-2">
-                            PIN: <span className="tracking-widest">{qr.securityCode}</span>
-                          </div>
-                        )}
+
 
                         {/* QR Code */}
                         <div className="p-2.5 bg-white border border-slate-300 rounded-xl shadow-2xs mb-2">
@@ -1422,7 +1558,92 @@ export default function QRManagement() {
         </div>
       )}
 
-      {/* 8. DIGITAL CARD DOWNLOAD MODAL */}
+      {/* 8. ASSIGN BATCH MODAL */}
+      {showAssignModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl my-6">
+
+            <div className="flex justify-between items-start pb-4 border-b border-slate-100 mb-6">
+              <div>
+                <h3 className="font-black text-xl text-slate-900 flex items-center space-x-2">
+                  <UserPlus className="w-5 h-5 text-[#16A34A]" />
+                  <span>Select Dealer</span>
+                </h3>
+                <p className="text-xs text-slate-500 font-medium mt-1">
+                  Assigning {selectedBatches.length} batches to the selected dealer.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAssignModal(false)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative mb-6">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search Dealer by name or phone..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-4 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:border-[#16A34A] transition"
+                value={dealerSearch}
+                onChange={(e) => setDealerSearch(e.target.value)}
+              />
+            </div>
+
+            <div className="max-h-60 overflow-y-auto mb-6 border border-slate-200 rounded-2xl p-1 bg-slate-50">
+              {dealersList
+                .filter(d => d.name.toLowerCase().includes(dealerSearch.toLowerCase()) || d.phone.includes(dealerSearch))
+                .map(dealer => (
+                  <div
+                    key={dealer._id}
+                    onClick={() => setSelectedDealer(dealer._id)}
+                    className={`p-3 rounded-xl cursor-pointer flex justify-between items-center transition mb-1 last:mb-0 ${selectedDealer === dealer._id
+                        ? 'bg-white border-2 border-[#16A34A] shadow-sm'
+                        : 'hover:bg-white border-2 border-transparent'
+                      }`}
+                  >
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm">{dealer.name}</p>
+                      <p className="text-xs font-mono text-slate-500 mt-0.5">{dealer.phone}</p>
+                    </div>
+                    {selectedDealer === dealer._id && (
+                      <div className="bg-emerald-100 text-[#16A34A] p-1 rounded-full">
+                        <Check className="w-4 h-4" />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              {dealersList.filter(d => d.name.toLowerCase().includes(dealerSearch.toLowerCase()) || d.phone.includes(dealerSearch)).length === 0 && (
+                <div className="p-8 text-center flex flex-col items-center justify-center text-slate-400">
+                  <ShieldAlert className="w-6 h-6 mb-2 opacity-50" />
+                  <span className="text-xs font-medium">No dealers found</span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
+              <button
+                onClick={() => setShowAssignModal(false)}
+                className="px-5 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAssignBatches}
+                className="px-6 py-2.5 text-xs font-bold text-white bg-[#16A34A] hover:bg-[#15803d] rounded-xl shadow-lg shadow-[#16A34A]/30 transition disabled:opacity-50 disabled:shadow-none"
+                disabled={!selectedDealer}
+              >
+                Confirm Assignment
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 9. DIGITAL CARD DOWNLOAD MODAL */}
       {downloadDigitalQR && (
         <DigitalCardModal
           qr={downloadDigitalQR}

@@ -28,16 +28,34 @@ export default function Vehicles() {
     fetchVehicles();
   }, []);
 
+  const [activeTab, setActiveTab] = useState('active_digital');
+
   const filteredVehicles = vehicles.filter((v) => {
+    // Basic search filtering
     const q = search.toLowerCase();
     const brand = (v.vehicleBrand || '').toLowerCase();
     const name = (v.vehicleName || '').toLowerCase();
     const number = (v.vehicleNumber || '').toLowerCase();
     const owner = (v.userId?.name || '').toLowerCase();
     const phone = (v.userId?.phone || '').toLowerCase();
-    const qrs = (v.qrs || []).map(qr => `${qr.productId} ${qr.copyCode}`).join(' ').toLowerCase();
+    const qrs = (v.qrs || []);
+    const qrText = qrs.map(qr => `${qr.productId} ${qr.copyCode}`).join(' ').toLowerCase();
 
-    return brand.includes(q) || name.includes(q) || number.includes(q) || owner.includes(q) || phone.includes(q) || qrs.includes(q);
+    const matchesSearch = brand.includes(q) || name.includes(q) || number.includes(q) || owner.includes(q) || phone.includes(q) || qrText.includes(q);
+    if (!matchesSearch) return false;
+
+    // Tab filtering
+    const primaryQR = qrs[0] || {};
+    const status = primaryQR.status || 'UNKNOWN';
+    const isDigital = primaryQR.qrType === 'DIGITAL';
+
+    if (activeTab === 'active_digital') return status === 'ACTIVE' && isDigital;
+    if (activeTab === 'active_physical') return status === 'ACTIVE' && !isDigital;
+    if (activeTab === 'expired') return status === 'EXPIRED';
+    if (activeTab === 'suspended') return status === 'SUSPENDED';
+    if (activeTab === 'all') return true;
+
+    return true;
   });
 
   return (
@@ -49,7 +67,7 @@ export default function Vehicles() {
             <div className="p-2.5 bg-[#1D56A5]/10 text-[#1D56A5] rounded-2xl">
               <ShieldCheck className="w-7 h-7" />
             </div>
-            <span>Protected Items & Assets Registry</span>
+            <span>Activated Tag Registry</span>
           </h1>
           <p className="text-sm text-slate-500 mt-1">
             All vehicles, bags, luggage, and personal assets registered under Safe Drive protection
@@ -61,6 +79,60 @@ export default function Vehicles() {
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
+        </button>
+      </div>
+
+      {/* TABS */}
+      <div className="flex space-x-2 border-b border-slate-200 mb-4 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('active_digital')}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'active_digital'
+              ? 'border-[#1D56A5] text-[#1D56A5]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Active Digital
+        </button>
+        <button
+          onClick={() => setActiveTab('active_physical')}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'active_physical'
+              ? 'border-[#1D56A5] text-[#1D56A5]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Active Physical
+        </button>
+        <button
+          onClick={() => setActiveTab('suspended')}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'suspended'
+              ? 'border-[#E94E1A] text-[#E94E1A]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Suspended
+        </button>
+        <button
+          onClick={() => setActiveTab('expired')}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'expired'
+              ? 'border-[#1D56A5] text-[#1D56A5]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          Expired
+        </button>
+        <button
+          onClick={() => setActiveTab('all')}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors whitespace-nowrap ml-auto ${
+            activeTab === 'all'
+              ? 'border-[#1D56A5] text-[#1D56A5]'
+              : 'border-transparent text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          All Items
         </button>
       </div>
 
@@ -77,7 +149,7 @@ export default function Vehicles() {
           />
         </div>
         <div className="text-xs font-bold text-slate-500">
-          Total Registered Items: <span className="text-[#1D56A5] font-black">{filteredVehicles.length}</span>
+          Showing: <span className="text-[#1D56A5] font-black">{filteredVehicles.length}</span>
         </div>
       </div>
 
@@ -208,7 +280,7 @@ export default function Vehicles() {
                       <td className="py-4 px-4 text-right">
                         <div className="flex items-center justify-end space-x-1.5">
                           <Link
-                            to={`/qr-users/${v.userId?._id || productId || v._id}`}
+                            to={`/qr-users/${v.userId?._id || productId || v._id}?productId=${productId}`}
                             className="bg-emerald-50 hover:bg-emerald-100 text-[#259A3A] text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition inline-flex items-center space-x-1 border border-emerald-200"
                             title="View Vehicle & QR Details"
                           >
@@ -217,16 +289,41 @@ export default function Vehicles() {
                           </Link>
 
                           {primaryQR && (
-                            <a
-                              href={`${PUBLIC_SCAN_BASE}/${primaryQR.publicToken}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="bg-[#1D56A5] hover:bg-[#164382] text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition shadow-2xs inline-flex items-center space-x-1"
-                              title="Open Public QR Scan Page"
-                            >
-                              <ExternalLink className="w-3 h-3" />
-                              <span>Scan</span>
-                            </a>
+                            <>
+                              <button
+                                onClick={async () => {
+                                  const nextStatus = primaryQR.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED';
+                                  if (!confirm(`Change status of tag ${primaryQR.copyCode} to ${nextStatus}?`)) return;
+                                  try {
+                                    const res = await axios.put(`${API_BASE}/admin/qr/${primaryQR._id}/status`, { status: nextStatus }, authHeader);
+                                    if (res.data.success) {
+                                      fetchVehicles();
+                                    }
+                                  } catch (err) {
+                                    alert(err.response?.data?.message || 'Error updating status');
+                                  }
+                                }}
+                                className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition shadow-2xs inline-flex items-center space-x-1 ${
+                                  primaryQR.status === 'SUSPENDED' 
+                                    ? 'bg-[#259A3A]/10 hover:bg-[#259A3A] hover:text-white text-[#259A3A] border border-[#259A3A]/30' 
+                                    : 'bg-[#E94E1A]/10 hover:bg-[#E94E1A] hover:text-white text-[#E94E1A] border border-[#E94E1A]/30'
+                                }`}
+                                title={primaryQR.status === 'SUSPENDED' ? 'Activate Tag' : 'Suspend Tag'}
+                              >
+                                <span>{primaryQR.status === 'SUSPENDED' ? 'Activate' : 'Suspend'}</span>
+                              </button>
+                              
+                              <a
+                                href={`${PUBLIC_SCAN_BASE}/${primaryQR.publicToken}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="bg-[#1D56A5] hover:bg-[#164382] text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition shadow-2xs inline-flex items-center space-x-1"
+                                title="Open Public QR Scan Page"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>Scan</span>
+                              </a>
+                            </>
                           )}
                         </div>
                       </td>

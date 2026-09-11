@@ -48,8 +48,8 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
-      {/* Title & Filter Bar */}
-      <div className="space-y-4">
+      {/* Title & Action Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900">
             Vehicle Safety Overview
@@ -59,27 +59,42 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* Filter Controls Bar */}
-        <div className="flex flex-wrap items-center gap-3 pt-1">
-          <select className="bg-white border border-slate-200 text-xs font-semibold rounded-xl px-4 py-2.5 text-slate-700 shadow-xs focus:outline-none">
-            <option value="all">All Vehicles & Batches</option>
-            <option value="active">Active Only</option>
-          </select>
-
-          <div className="bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-500 shadow-xs flex items-center space-x-2">
-            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-            <span>Today: {todayDateStr}</span>
-          </div>
-
+        {/* Sync Button */}
+        <div className="flex items-center shrink-0">
           <button
             onClick={fetchStats}
-            className="flex items-center space-x-2 bg-[#1D56A5] hover:bg-[#164382] text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-md shadow-[#1D56A5]/20 transition"
+            className="flex items-center space-x-2 bg-[#1D56A5] hover:bg-[#164382] text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-md shadow-[#1D56A5]/20 transition"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
             <span>Sync Live Stats</span>
           </button>
         </div>
       </div>
+
+      {/* LOW STOCK ALERTS */}
+      {stats?.lowStockAlerts && stats.lowStockAlerts.length > 0 && (
+        <div className="space-y-3">
+          {stats.lowStockAlerts.map((alert, idx) => (
+            <div key={idx} className="bg-[#fff9f2] border border-orange-200/60 rounded-2xl p-4 flex items-center space-x-4 shadow-sm animate-in fade-in slide-in-from-top-4">
+              <div className="w-12 h-12 rounded-full bg-orange-100/80 text-orange-600 flex items-center justify-center shrink-0 border border-orange-200">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-black text-orange-900 tracking-tight">Low Stock Alert: {alert.category} Tags</h3>
+                <p className="text-xs text-orange-800/80 font-medium mt-0.5">
+                  Physical inventory has dropped to <span className="font-black text-red-600 text-sm bg-red-50 px-1.5 py-0.5 rounded border border-red-100 ml-1 mr-1">{alert.count}</span> units. Please generate more stock to prevent delays.
+                </p>
+              </div>
+              <Link 
+                to="/admin/qr" 
+                className="bg-white hover:bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-xs whitespace-nowrap"
+              >
+                Manage Inventory
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* HORIZONTAL 7 KPI METRIC CARDS WITH BRAND PALETTE */}
       {stats && (

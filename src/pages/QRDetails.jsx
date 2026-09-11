@@ -275,11 +275,7 @@ export default function QRDetails() {
             <div className="text-xl font-black text-slate-900 font-mono mb-1">
               {qr.copyCode}
             </div>
-            {qr.securityCode && (
-              <div className="bg-amber-100 text-amber-950 border border-amber-300 font-mono font-black text-xs px-3 py-1 rounded-lg mb-2">
-                🔑 TAG PIN: <span className="tracking-widest">{qr.securityCode}</span>
-              </div>
-            )}
+
             <div className="text-xs font-semibold text-slate-500 mb-4">
               Category: <strong className="text-slate-800">{qr.qrFor || 'Standard'}</strong> • Type: <strong className="text-slate-800">{qr.qrType || 'PHYSICAL'}</strong>
             </div>
@@ -340,16 +336,7 @@ export default function QRDetails() {
               <span className="font-mono font-bold text-slate-800">{qr.productId}</span>
             </div>
 
-            {qr.securityCode && (
-              <div className="flex justify-between items-center text-xs py-2 border-b border-slate-100 bg-amber-50 px-2.5 rounded-xl border border-amber-200">
-                <span className="font-bold text-amber-950 flex items-center space-x-1">
-                  <span>🔑 Security PIN</span>
-                </span>
-                <span className="font-mono font-black text-amber-950 text-sm tracking-widest bg-white px-2 py-0.5 rounded border border-amber-300">
-                  {qr.securityCode}
-                </span>
-              </div>
-            )}
+
 
             <div className="flex justify-between items-center text-xs py-1.5 border-b border-slate-100">
               <span className="text-slate-500">Public Token</span>
@@ -452,13 +439,17 @@ export default function QRDetails() {
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
               <div className="p-3.5 bg-emerald-50/60 border border-[#259A3A]/25 rounded-2xl text-center">
-                <div className="text-[10px] font-bold uppercase text-[#259A3A]">Initial Calls</div>
-                <div className="text-xl font-black text-slate-900 font-mono mt-0.5">{qr.initialCalls || 10}</div>
+                <div className="text-[10px] font-bold uppercase text-[#259A3A]">Calls (Left / Total)</div>
+                <div className="text-xl font-black text-slate-900 font-mono mt-0.5">
+                  {wallet ? `${wallet.callBalance} / ${wallet.callBalance + wallet.totalCallsUsed}` : `${qr.initialCalls || 10} / ${qr.initialCalls || 10}`}
+                </div>
               </div>
 
               <div className="p-3.5 bg-blue-50/60 border border-[#1D56A5]/25 rounded-2xl text-center">
-                <div className="text-[10px] font-bold uppercase text-[#1D56A5]">Initial SMS</div>
-                <div className="text-xl font-black text-slate-900 font-mono mt-0.5">{qr.initialMessages || 20}</div>
+                <div className="text-[10px] font-bold uppercase text-[#1D56A5]">SMS (Left / Total)</div>
+                <div className="text-xl font-black text-slate-900 font-mono mt-0.5">
+                  {wallet ? `${wallet.messageBalance} / ${wallet.messageBalance + wallet.totalMessagesUsed}` : `${qr.initialMessages || 20} / ${qr.initialMessages || 20}`}
+                </div>
               </div>
 
               <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-center">

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import axios from 'axios';
 import {
   LayoutDashboard,
   QrCode,
@@ -23,9 +24,11 @@ import {
   MessageSquare,
   ChevronLeft,
   Menu,
-  X
+  X,
+  Globe,
+  Handshake
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, API_BASE } from '../context/AuthContext';
 
 export default function Sidebar({
   collapsed = false,
@@ -33,12 +36,44 @@ export default function Sidebar({
   mobileOpen = false,
   onCloseMobile = () => { }
 }) {
-  const { logout } = useAuth();
+  const { logout, token } = useAuth();
   const location = useLocation();
 
   // Settings dropdown state
   const isSettingsActive = location.pathname.startsWith('/settings');
-  const [settingsOpen, setSettingsOpen] = useState(true);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Partner dropdown state
+  const isPartnerActive = location.pathname.startsWith('/partner') || location.pathname.startsWith('/dealers');
+  const [partnerOpen, setPartnerOpen] = useState(false);
+
+  // Website dropdown state
+  const isWebsiteActive = location.pathname.startsWith('/contact-messages') || location.pathname.startsWith('/website-settings') || location.pathname.startsWith('/faqs');
+  const [websiteOpen, setWebsiteOpen] = useState(false);
+
+  // Pending Orders State
+  const [pendingOrders, setPendingOrders] = useState(0);
+
+  useEffect(() => {
+    const fetchPendingOrders = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/admin/orders/stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.data.success && res.data.stats) {
+          setPendingOrders(res.data.stats.pendingDispatch || 0);
+        }
+      } catch (err) {
+        console.error('Failed to fetch pending orders count', err);
+      }
+    };
+
+    if (token) {
+      fetchPendingOrders();
+      const interval = setInterval(fetchPendingOrders, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [token]);
 
   const handleLinkClick = () => {
     onCloseMobile();
@@ -69,14 +104,21 @@ export default function Sidebar({
         onClick={handleLinkClick}
         title="Customer Orders"
         className={({ isActive }) =>
-          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
+          `flex items-center justify-between w-full ${isMini ? 'justify-center px-0 py-3' : 'px-3.5 py-3'} rounded-xl font-medium transition ${isActive
             ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
             : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
           }`
         }
       >
-        <Package className="w-5 h-5 flex-shrink-0" />
-        {!isMini && <span>Customer Orders</span>}
+        <div className="flex items-center space-x-3">
+          <Package className="w-5 h-5 flex-shrink-0" />
+          {!isMini && <span>Customer Orders</span>}
+        </div>
+        {!isMini && pendingOrders > 0 && (
+          <span className="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">
+            {pendingOrders}
+          </span>
+        )}
       </NavLink>
 
       {/* 2. QR Inventory */}
@@ -127,7 +169,8 @@ export default function Sidebar({
         {!isMini && <span>User Accounts</span>}
       </NavLink>
 
-      {/* 3.1 QR Users (Activated Vehicle Owners) */}
+
+      {/* 3.2 QR Users (Activated Vehicle Owners) */}
       {/* <NavLink
         to="/qr-users"
         onClick={handleLinkClick}
@@ -143,11 +186,11 @@ export default function Sidebar({
         {!isMini && <span>QR Users (Vehicle Owners)</span>}
       </NavLink> */}
 
-      {/* 4. Protected Items & Assets Registry */}
+      {/* 4. Activated Tags Registry */}
       <NavLink
         to="/vehicles"
         onClick={handleLinkClick}
-        title="Protected Items & Assets"
+        title="Activated Tag"
         className={({ isActive }) =>
           `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
             ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
@@ -156,24 +199,79 @@ export default function Sidebar({
         }
       >
         <ShieldCheck className="w-5 h-5 flex-shrink-0" />
-        {!isMini && <span>Protected Items & Assets</span>}
+        {!isMini && <span>Activated Tag</span>}
       </NavLink>
 
-      {/* 4.1 Contact Messages */}
-      <NavLink
-        to="/contact-messages"
-        onClick={handleLinkClick}
-        title="Contact Messages"
-        className={({ isActive }) =>
-          `flex items-center w-full ${isMini ? 'justify-center px-0 py-3' : 'space-x-3 px-3.5 py-3'} rounded-xl font-medium transition ${isActive
-            ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
-            : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
-          }`
-        }
-      >
-        <MessageSquare className="w-5 h-5 flex-shrink-0" />
-        {!isMini && <span>Contact Messages</span>}
-      </NavLink>
+      {/* 4.1 WEBSITE COLLAPSIBLE SECTION */}
+      <div className="pt-1">
+        {isMini ? (
+          <NavLink
+            to="/contact-messages"
+            onClick={handleLinkClick}
+            title="Website"
+            className={({ isActive }) =>
+              `flex items-center justify-center px-0 py-3 rounded-xl font-medium transition ${isWebsiteActive
+                ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
+                : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+              }`
+            }
+          >
+            <Globe className="w-5 h-5 flex-shrink-0" />
+          </NavLink>
+        ) : (
+          <>
+            <button
+              onClick={() => setWebsiteOpen(!websiteOpen)}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium transition ${isWebsiteActive
+                ? 'bg-slate-800/80 text-blue-300 font-bold'
+                : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Globe className="w-5 h-5 flex-shrink-0 text-slate-400" />
+                <span>Website</span>
+              </div>
+              {websiteOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+
+            {/* Sub-menu */}
+            {websiteOpen && (
+              <div className="ml-5 pl-3 border-l border-slate-700/60 space-y-1 mt-1.5 py-1">
+                <NavLink
+                  to="/contact-messages"
+                  onClick={handleLinkClick}
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  ✉️ Contact Messages
+                </NavLink>
+                <NavLink
+                  to="/website-settings"
+                  onClick={handleLinkClick}
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  ⚙️ Website Settings
+                </NavLink>
+                <NavLink
+                  to="/faqs"
+                  onClick={handleLinkClick}
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  ❓ FAQs
+                </NavLink>
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
       {/* 5. Emergency Alerts */}
       <NavLink
@@ -300,6 +398,80 @@ export default function Sidebar({
                   }
                 >
                   ⚙️ Global Settings
+                </NavLink>
+
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* 8. PARTNER PORTAL COLLAPSIBLE SECTION */}
+      <div className="pt-1">
+        {isMini ? (
+          <NavLink
+            to="/partner/first-page"
+            onClick={handleLinkClick}
+            title="Partner Portal"
+            className={({ isActive }) =>
+              `flex items-center justify-center px-0 py-3 rounded-xl font-medium transition ${isPartnerActive
+                ? 'bg-[#16A34A] text-white font-bold shadow-lg shadow-[#16A34A]/30'
+                : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+              }`
+            }
+          >
+            <Handshake className="w-5 h-5 flex-shrink-0" />
+          </NavLink>
+        ) : (
+          <>
+            <button
+              onClick={() => setPartnerOpen(!partnerOpen)}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium transition ${isPartnerActive
+                ? 'bg-slate-800/80 text-blue-300 font-bold'
+                : 'text-slate-400 hover:bg-slate-800/60 hover:text-white'
+                }`}
+            >
+              <div className="flex items-center space-x-3">
+                <Handshake className="w-5 h-5 flex-shrink-0 text-slate-400" />
+                <span>Partner Portal</span>
+              </div>
+              {partnerOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </button>
+
+            {/* Sub-menu */}
+            {partnerOpen && (
+              <div className="ml-5 pl-3 border-l border-slate-700/60 space-y-1 mt-1.5 py-1">
+                <NavLink
+                  to="/partner/manage-products"
+                  onClick={handleLinkClick}
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  📦 Manage Bulk Products
+                </NavLink>
+
+                <NavLink
+                  to="/partner/orders"
+                  onClick={handleLinkClick}
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  📝 Partner Bulk Orders
+                </NavLink>
+
+                <NavLink
+                  to="/dealers"
+                  onClick={handleLinkClick}
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  🤝 Partners Management
                 </NavLink>
               </div>
             )}

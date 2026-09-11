@@ -51,6 +51,9 @@ export default function UserDetails() {
     totalKits: 0,
     activeKits: 0,
     pendingKits: 0,
+    pendingKits: 0,
+    cancelledKits: 0,
+    returnedKits: 0,
     expiredKits: 0,
     totalVehicles: 0,
     totalOrders: 0,
@@ -62,6 +65,9 @@ export default function UserDetails() {
   const [orders, setOrders] = useState([]);
   const [payments, setPayments] = useState([]);
   const [quotaLedger, setQuotaLedger] = useState([]);
+
+  // Kit Tabs State
+  const [activeKitTab, setActiveKitTab] = useState('PHYSICAL');
 
   // Deep-Dive Modal State
   const [viewingKitModal, setViewingKitModal] = useState(null);
@@ -370,7 +376,7 @@ export default function UserDetails() {
       </div>
 
       {/* 2. ANALYTICS METRIC CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3.5">
         {/* Total QR Kits Purchased */}
         <div className="bg-white p-4.5 rounded-3xl border border-slate-200 shadow-xs">
           <div className="flex items-center justify-between text-slate-400 mb-1.5">
@@ -379,7 +385,8 @@ export default function UserDetails() {
           </div>
           <div className="text-2xl font-black text-slate-900">{stats.totalKits || 0}</div>
           <p className="text-[10px] text-slate-400 mt-1 font-medium">
-            {stats.activeKits || 0} Active • {stats.pendingKits || 0} Pending Scan
+            {stats.activeKits || 0} Active • {stats.pendingKits || 0} Pending
+            {stats.suspendedKits > 0 && ` • ${stats.suspendedKits} Suspended`}
           </p>
         </div>
 
@@ -413,6 +420,26 @@ export default function UserDetails() {
           <p className="text-[10px] text-emerald-700 mt-1 font-medium">Bound with Live Vehicles</p>
         </div>
 
+        {/* Cancelled Kits */}
+        <div className="bg-white p-4.5 rounded-3xl border border-slate-200 shadow-xs">
+          <div className="flex items-center justify-between text-slate-400 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-red-600">Cancelled</span>
+            <X className="w-4.5 h-4.5 text-red-600" />
+          </div>
+          <div className="text-2xl font-black text-red-600">{stats.cancelledKits || 0}</div>
+          <p className="text-[10px] text-red-700 mt-1 font-medium">Cancelled Orders</p>
+        </div>
+
+        {/* Returned Kits */}
+        <div className="bg-white p-4.5 rounded-3xl border border-slate-200 shadow-xs">
+          <div className="flex items-center justify-between text-slate-400 mb-1.5">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-orange-600">Returned</span>
+            <RefreshCw className="w-4.5 h-4.5 text-orange-600" />
+          </div>
+          <div className="text-2xl font-black text-orange-600">{stats.returnedKits || 0}</div>
+          <p className="text-[10px] text-orange-700 mt-1 font-medium">Returned Orders</p>
+        </div>
+
         {/* Total Spent */}
         <div className="bg-white p-4.5 rounded-3xl border border-slate-200 shadow-xs col-span-2 sm:col-span-1">
           <div className="flex items-center justify-between text-slate-400 mb-1.5">
@@ -436,7 +463,6 @@ export default function UserDetails() {
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Contact Details</span>
             <div className="font-bold text-slate-900 text-sm">{userData.name}</div>
             <div className="text-slate-600 font-mono">📱 Mobile: {userData.phone}</div>
-            {userData.whatsappNumber && <div className="text-slate-600 font-mono">💬 WhatsApp: {userData.whatsappNumber}</div>}
             <div className="text-slate-600 font-mono">✉️ Email: {userData.email || 'N/A'}</div>
           </div>
 
@@ -467,17 +493,44 @@ export default function UserDetails() {
           </div>
         </div>
 
-        {kits.length === 0 ? (
-          <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs text-center text-slate-400 text-xs">
-            No QR safety kits or orders purchased by this user yet.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {kits.map((kit, idx) => {
+        <div className="flex items-center space-x-6 border-b border-slate-200 px-1 overflow-x-auto hide-scrollbar">
+          {['PHYSICAL', 'DIGITAL', 'ACTIVE', 'EXPIRED', 'ALL'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveKitTab(tab)}
+              className={`pb-3 px-1 text-xs font-black uppercase tracking-widest transition whitespace-nowrap border-b-2 ${
+                activeKitTab === tab 
+                  ? 'border-[#1D56A5] text-[#1D56A5]' 
+                  : 'border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300'
+              }`}
+            >
+              {tab === 'PHYSICAL' ? 'Physical' : tab === 'DIGITAL' ? 'Digital' : tab === 'ACTIVE' ? 'Active' : tab === 'EXPIRED' ? 'Expired' : 'All'}
+            </button>
+          ))}
+        </div>
+
+        {(() => {
+          const filteredKits = kits.filter(kit => {
+            if (activeKitTab === 'ALL') return true;
+            if (activeKitTab === 'PHYSICAL') return kit.qrType === 'PHYSICAL' || !kit.qrType;
+            if (activeKitTab === 'DIGITAL') return kit.qrType === 'DIGITAL';
+            if (activeKitTab === 'ACTIVE') return kit.status === 'ACTIVE';
+            if (activeKitTab === 'EXPIRED') return kit.status === 'EXPIRED';
+            return true;
+          });
+
+          return filteredKits.length === 0 ? (
+            <div className="bg-white rounded-3xl p-8 border border-slate-200 shadow-xs text-center text-slate-400 text-xs">
+              No QR safety kits found for the selected category.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredKits.map((kit, idx) => {
               const isPaymentsExpanded = !!expandedKitPayments[kit.productId];
               const kitPayments = kit.payments || [];
               const isActive = kit.status === 'ACTIVE';
-              const isPending = kit.status === 'PENDING_DELIVERY_SCAN' || kit.isPendingOrder;
+              const isCancelled = kit.status === 'CANCELLED' || kit.deliveryStatus === 'CANCELLED' || kit.order?.status === 'CANCELLED';
+              const isPending = !isCancelled && (kit.status === 'PENDING_DELIVERY_SCAN' || kit.isPendingOrder);
 
               return (
                 <div
@@ -513,11 +566,13 @@ export default function UserDetails() {
                           <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-full border ${
                             isActive
                               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                              : isCancelled
+                              ? 'bg-red-50 text-red-700 border-red-200'
                               : isPending
                               ? 'bg-amber-50 text-amber-800 border-amber-200'
                               : 'bg-red-50 text-red-700 border-red-200'
                           }`}>
-                            ● {isActive ? 'ACTIVE' : isPending ? 'PENDING DELIVERY & SCAN' : kit.status}
+                            ● {isActive ? 'ACTIVE' : isCancelled ? 'CANCELLED' : isPending ? 'PENDING DELIVERY & SCAN' : kit.status}
                           </span>
                         </div>
 
@@ -623,6 +678,10 @@ export default function UserDetails() {
                             </div>
                           )}
                         </div>
+                      ) : isCancelled ? (
+                        <div className="text-red-700 text-[11px] leading-relaxed">
+                          ❌ <strong>Cancelled:</strong> This order has been cancelled.
+                        </div>
                       ) : isPending ? (
                         <div className="text-amber-800 text-[11px] leading-relaxed">
                           📦 <strong>Physical Delivery:</strong> Awaiting sticker delivery to customer & scan activation.
@@ -710,7 +769,8 @@ export default function UserDetails() {
               );
             })}
           </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* 5. QUOTA LEDGER & ADD-ON TOP-UP HISTORY */}
@@ -1455,15 +1515,6 @@ export default function UserDetails() {
                     required
                     value={editUserForm.phone}
                     onChange={(e) => setEditUserForm({ ...editUserForm, phone: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">WhatsApp Phone</label>
-                  <input
-                    type="text"
-                    value={editUserForm.whatsappNumber}
-                    onChange={(e) => setEditUserForm({ ...editUserForm, whatsappNumber: e.target.value })}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 font-mono"
                   />
                 </div>
