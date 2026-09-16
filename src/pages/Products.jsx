@@ -6,24 +6,15 @@ import {
   Plus,
   RefreshCw,
   Edit2,
-  Trash2,
-  CheckCircle2,
   X,
-  Phone,
-  MessageSquare,
-  Clock,
-  QrCode,
-  Tag,
-  DollarSign,
-  Layers,
   UploadCloud,
-  ImageIcon,
-  Lock,
   Eye,
   Box,
   CheckCircle
 } from 'lucide-react';
 import { useAuth, API_BASE } from '../context/AuthContext';
+import Swal from 'sweetalert2';
+import { toast } from 'react-toastify';
 
 export default function Products() {
   const navigate = useNavigate();
@@ -59,7 +50,7 @@ export default function Products() {
     initialMessages: 20,
     validityDays: 365,
     renewalAmount: 199,
-    featuresText: 'Instant Masked Calling to Owner\nInstant Push & Direct Notifications\nAnti-Harassment Plate Verification\n1 Year Cloud Safety Protection'
+    featuresText: 'Instant Masked Calling to Owner\nInstant Push & Direct Notifications\nAnti-Harassment Plate Verification'
   });
 
   const fetchData = async () => {
@@ -90,13 +81,13 @@ export default function Products() {
   // Auto-generate slug when creating a new product based on title and type
   useEffect(() => {
     if (!editingProduct && form.title) {
-       const newSlug = `${form.title}-${form.qrType}`.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-       setForm(prev => {
-         if (prev.slug !== newSlug) {
-           return { ...prev, slug: newSlug };
-         }
-         return prev;
-       });
+      const newSlug = `${form.title}-${form.qrType}`.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      setForm(prev => {
+        if (prev.slug !== newSlug) {
+          return { ...prev, slug: newSlug };
+        }
+        return prev;
+      });
     }
   }, [form.title, form.qrType, editingProduct]);
 
@@ -243,25 +234,51 @@ export default function Products() {
   const handleToggleActive = async (p) => {
     const newStatus = !p.isActive;
     const msg = newStatus ? `Enable product ${p.name}? It will be visible on the store.` : `Disable product ${p.name}? It will be hidden from the store.`;
-    if (!confirm(msg)) return;
-    try {
-      await axios.put(`${API_BASE}/admin/products/${p._id}`, { isActive: newStatus }, authHeader);
-      fetchData();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Error updating product');
-    }
+
+    Swal.fire({
+      title: 'Are you sure?',
+      text: msg,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#1D56A5',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, do it!'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await axios.put(`${API_BASE}/admin/products/${p._id}`, { isActive: newStatus }, authHeader);
+          fetchData();
+          toast.success(`Product ${newStatus ? 'enabled' : 'disabled'} successfully`);
+        } catch (err) {
+          toast.error(err.response?.data?.message || 'Error updating product');
+        }
+      }
+    });
   };
 
   const handleToggleStock = async (p) => {
     const newStock = p.inStock === false ? true : false;
     const msg = newStock ? `Mark ${p.name} as In Stock?` : `Mark ${p.name} as Out of Stock?`;
-    if (!confirm(msg)) return;
-    try {
-      await axios.put(`${API_BASE}/admin/products/${p._id}`, { inStock: newStock }, authHeader);
-      fetchData();
-    } catch (err) {
-      alert(err.response?.data?.message || 'Error updating product');
-    }
+
+    Swal.fire({
+      title: 'Update Stock',
+      text: msg,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#1D56A5',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Yes, update it!'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await axios.put(`${API_BASE}/admin/products/${p._id}`, { inStock: newStock }, authHeader);
+          fetchData();
+          toast.success(`Product marked as ${newStock ? 'In Stock' : 'Out of Stock'}`);
+        } catch (err) {
+          toast.error(err.response?.data?.message || 'Error updating product');
+        }
+      }
+    });
   };
 
   return (
@@ -296,7 +313,7 @@ export default function Products() {
           </button>
         </div>
       </div>
-      
+
       {/* 1.5 TABS FOR FILTERING */}
       <div className="flex space-x-2 border-b border-slate-200 mb-4">
         <button
@@ -317,7 +334,25 @@ export default function Products() {
         >
           All Products
         </button>
+        <button
+          onClick={() => setTypeFilter('DISABLED')}
+          className={`px-4 py-3 text-sm font-bold border-b-2 transition-colors ${typeFilter === 'DISABLED' ? 'border-[#1D56A5] text-[#1D56A5]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+        >
+          Disabled Products
+        </button>
       </div>
+      
+      {(() => {
+        const filteredProducts = products.filter(p => {
+          if (typeFilter === 'DISABLED') return p.isActive === false;
+          if (p.isActive === false) return false;
+          if (typeFilter === 'ALL') return true;
+          return (p.qrType || 'PHYSICAL') === typeFilter;
+        });
+
+        return (
+          <>
+
 
       {/* 2. PRODUCTS TABLE */}
       <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
@@ -334,14 +369,14 @@ export default function Products() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {products.filter(p => typeFilter === 'ALL' || (p.qrType || 'PHYSICAL') === typeFilter).length === 0 ? (
+              {filteredProducts.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="px-6 py-12 text-center text-slate-400 text-xs">
                     {loading ? 'Loading products...' : 'No products found for this category.'}
                   </td>
                 </tr>
               ) : (
-                products.filter(p => typeFilter === 'ALL' || (p.qrType || 'PHYSICAL') === typeFilter).map((p) => {
+                filteredProducts.map((p) => {
                   const mrp = p.originalPrice || (p.price + (p.discount || 0));
                   const hasDiscount = mrp > p.price;
                   const discountVal = hasDiscount ? (p.discount || (mrp - p.price)) : 0;
@@ -388,11 +423,10 @@ export default function Products() {
                       {/* 2. Type / Format & Category */}
                       <td className="px-6 py-3.5">
                         <div className="space-y-1.5">
-                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md border inline-flex items-center space-x-1 ${
-                            p.qrType === 'DIGITAL'
-                              ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                              : 'bg-amber-50 text-amber-800 border-amber-200'
-                          }`}>
+                          <span className={`text-[10px] font-bold px-2.5 py-1 rounded-md border inline-flex items-center space-x-1 ${p.qrType === 'DIGITAL'
+                            ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                            : 'bg-amber-50 text-amber-800 border-amber-200'
+                            }`}>
                             <span>{p.qrType === 'DIGITAL' ? '💻 DIGITAL PASS' : '📦 PHYSICAL KIT'}</span>
                           </span>
                           <div>
@@ -458,25 +492,23 @@ export default function Products() {
 
                         <button
                           onClick={() => handleToggleStock(p)}
-                          className={`group relative p-2 rounded-lg transition shadow-2xs ${
-                            p.inStock !== false 
-                              ? 'text-orange-600 bg-orange-50 hover:bg-orange-500 hover:text-white' 
-                              : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-500 hover:text-white'
-                          }`}
+                          className={`group relative p-2 rounded-lg transition shadow-2xs ${p.inStock !== false
+                            ? 'text-orange-600 bg-orange-50 hover:bg-orange-500 hover:text-white'
+                            : 'text-emerald-600 bg-emerald-50 hover:bg-emerald-500 hover:text-white'
+                            }`}
                         >
                           <Box className="w-4 h-4" />
                           <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-200 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg pointer-events-none z-50 whitespace-nowrap">
                             {p.inStock !== false ? 'Mark Out of Stock' : 'Mark In Stock'}
                           </span>
                         </button>
-                        
+
                         <button
                           onClick={() => handleToggleActive(p)}
-                          className={`group relative p-2 rounded-lg transition shadow-2xs ${
-                            p.isActive !== false 
-                              ? 'text-slate-400 hover:bg-slate-500 hover:text-white bg-slate-100' 
-                              : 'text-emerald-500 hover:bg-emerald-500 hover:text-white bg-emerald-50'
-                          }`}
+                          className={`group relative p-2 rounded-lg transition shadow-2xs ${p.isActive !== false
+                            ? 'text-slate-400 hover:bg-slate-500 hover:text-white bg-slate-100'
+                            : 'text-emerald-500 hover:bg-emerald-500 hover:text-white bg-emerald-50'
+                            }`}
                         >
                           {p.isActive !== false ? <X className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                           <span className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition duration-200 bg-slate-800 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg pointer-events-none z-50 whitespace-nowrap">
@@ -492,6 +524,9 @@ export default function Products() {
           </table>
         </div>
       </div>
+        </>
+      );
+    })()}
 
       {/* 3. ADD / EDIT PRODUCT MODAL */}
       {showModal && (
@@ -635,15 +670,13 @@ export default function Products() {
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, qrType: 'PHYSICAL' })}
-                    className={`p-3 rounded-xl border text-left transition flex items-center space-x-2.5 ${
-                      form.qrType === 'PHYSICAL'
-                        ? 'bg-amber-50 border-amber-300 text-amber-900 shadow-2xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
+                    className={`p-3 rounded-xl border text-left transition flex items-center space-x-2.5 ${form.qrType === 'PHYSICAL'
+                      ? 'bg-amber-50 border-amber-300 text-amber-900 shadow-2xs'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
                   >
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      form.qrType === 'PHYSICAL' ? 'border-amber-600 bg-amber-600' : 'border-slate-300'
-                    }`}>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${form.qrType === 'PHYSICAL' ? 'border-amber-600 bg-amber-600' : 'border-slate-300'
+                      }`}>
                       {form.qrType === 'PHYSICAL' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
                     <div>
@@ -655,15 +688,13 @@ export default function Products() {
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, qrType: 'DIGITAL' })}
-                    className={`p-3 rounded-xl border text-left transition flex items-center space-x-2.5 ${
-                      form.qrType === 'DIGITAL'
-                        ? 'bg-indigo-50 border-indigo-300 text-indigo-900 shadow-2xs'
-                        : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
+                    className={`p-3 rounded-xl border text-left transition flex items-center space-x-2.5 ${form.qrType === 'DIGITAL'
+                      ? 'bg-indigo-50 border-indigo-300 text-indigo-900 shadow-2xs'
+                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      }`}
                   >
-                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                      form.qrType === 'DIGITAL' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
-                    }`}>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${form.qrType === 'DIGITAL' ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'
+                      }`}>
                       {form.qrType === 'DIGITAL' && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
                     </div>
                     <div>
@@ -874,11 +905,10 @@ export default function Products() {
                 <div>
                   <h3 className="font-black text-lg text-slate-900">{viewingProduct.title}</h3>
                   <div className="flex items-center space-x-2 mt-0.5">
-                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${
-                      viewingProduct.qrType === 'PHYSICAL'
-                        ? 'bg-amber-50 text-amber-800 border-amber-200'
-                        : 'bg-indigo-50 text-indigo-800 border-indigo-200'
-                    }`}>
+                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${viewingProduct.qrType === 'PHYSICAL'
+                      ? 'bg-amber-50 text-amber-800 border-amber-200'
+                      : 'bg-indigo-50 text-indigo-800 border-indigo-200'
+                      }`}>
                       {viewingProduct.qrType === 'PHYSICAL' ? '📦 Physical Kit' : '💻 Digital Pass'}
                     </span>
                     <span className="text-[10px] font-bold bg-blue-50 text-[#1D56A5] border border-blue-200 px-2 py-0.5 rounded-full font-mono">
