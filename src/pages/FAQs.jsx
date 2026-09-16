@@ -18,6 +18,7 @@ export default function FAQs() {
     question: '',
     answer: '',
     isActive: true,
+    showOnHome: false,
   });
 
   useEffect(() => {
@@ -68,7 +69,7 @@ export default function FAQs() {
   };
 
   const openAddModal = () => {
-    setCurrentFaq({ id: null, question: '', answer: '', isActive: true });
+    setCurrentFaq({ id: null, question: '', answer: '', isActive: true, showOnHome: false });
     setIsModalOpen(true);
   };
 
@@ -78,6 +79,7 @@ export default function FAQs() {
       question: faq.question,
       answer: faq.answer,
       isActive: faq.isActive,
+      showOnHome: faq.showOnHome || false,
     });
     setIsModalOpen(true);
   };
@@ -277,6 +279,19 @@ export default function FAQs() {
                 />
                 <label htmlFor="isActive" className="text-sm font-medium text-slate-700">
                   Active (Show on website)
+                </label>
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <input
+                  type="checkbox"
+                  id="showOnHome"
+                  checked={currentFaq.showOnHome}
+                  onChange={(e) => setCurrentFaq({...currentFaq, showOnHome: e.target.checked})}
+                  className="w-4 h-4 rounded bg-white border-slate-300 text-indigo-600 focus:ring-indigo-600 focus:ring-offset-white"
+                />
+                <label htmlFor="showOnHome" className="text-sm font-medium text-slate-700">
+                  Show on Home Page (Will show on both Home & Contact if active)
                 </label>
               </div>
 

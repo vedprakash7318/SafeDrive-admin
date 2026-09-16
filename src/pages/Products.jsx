@@ -45,6 +45,7 @@ export default function Products() {
 
   const [form, setForm] = useState({
     title: '',
+    slug: '',
     description: '',
     imageUrl: '',
     imagePublicId: '',
@@ -85,6 +86,19 @@ export default function Products() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  // Auto-generate slug when creating a new product based on title and type
+  useEffect(() => {
+    if (!editingProduct && form.title) {
+       const newSlug = `${form.title}-${form.qrType}`.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+       setForm(prev => {
+         if (prev.slug !== newSlug) {
+           return { ...prev, slug: newSlug };
+         }
+         return prev;
+       });
+    }
+  }, [form.title, form.qrType, editingProduct]);
 
   // Cloudinary Single Image Upload
   const handleImageFileChange = async (e) => {
@@ -128,6 +142,7 @@ export default function Products() {
     const defaultType = qrTypes.length > 0 ? qrTypes[0] : null;
     setForm({
       title: '',
+      slug: '',
       description: '',
       imageUrl: '',
       imagePublicId: '',
@@ -152,6 +167,7 @@ export default function Products() {
     const origPrice = p.originalPrice || (p.price + (p.discount || 0));
     setForm({
       title: p.title || p.name || '',
+      slug: p.slug || '',
       description: p.description || '',
       imageUrl: p.imageUrl || '',
       imagePublicId: p.imagePublicId || '',
@@ -192,6 +208,7 @@ export default function Products() {
     const payload = {
       title: form.title.trim(),
       name: form.title.trim(),
+      slug: form.slug.trim(),
       description: form.description.trim(),
       imageUrl: form.imageUrl,
       imagePublicId: form.imagePublicId,
@@ -576,6 +593,21 @@ export default function Products() {
                   placeholder="e.g. Car Safety QR Protection Kit"
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm font-bold focus:bg-white focus:outline-none focus:border-[#1D56A5] transition"
+                />
+              </div>
+
+              {/* Slug */}
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  URL Slug *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. car-safety-qr-physical"
+                  value={form.slug}
+                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-900 text-sm font-bold focus:bg-white focus:outline-none focus:border-[#1D56A5] transition"
                 />
               </div>
