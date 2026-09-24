@@ -15,6 +15,7 @@ import QRFormats from './pages/QRFormats';
 import SettingsTags from './pages/SettingsTags';
 import GlobalSettings from './pages/GlobalSettings';
 import WebsiteSettings from './pages/WebsiteSettings';
+import WebsitePricingSettings from './pages/WebsitePricingSettings';
 import FAQs from './pages/FAQs';
 import ScanReasons from './pages/ScanReasons';
 import ExtraPricing from './pages/ExtraPricing';
@@ -101,6 +102,7 @@ function AuthenticatedApp() {
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/settings" element={<GlobalSettings />} />
             <Route path="/website-settings" element={<WebsiteSettings />} />
+            <Route path="/website/pricing" element={<WebsitePricingSettings />} />
             <Route path="/faqs" element={<FAQs />} />
             <Route path="/scan-logs" element={<ScanLogs />} />
             <Route path="*" element={<Navigate to="/" replace />} />

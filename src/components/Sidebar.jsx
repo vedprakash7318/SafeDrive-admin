@@ -258,6 +258,16 @@ export default function Sidebar({
                   ⚙️ Website Settings
                 </NavLink>
                 <NavLink
+                  to="/website/pricing"
+                  onClick={handleLinkClick}
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-lg text-xs font-semibold transition ${isActive ? 'bg-[#16A34A] text-white shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                    }`
+                  }
+                >
+                  💳 Pricing Plans
+                </NavLink>
+                <NavLink
                   to="/faqs"
                   onClick={handleLinkClick}
                   className={({ isActive }) =>

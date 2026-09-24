@@ -5,8 +5,8 @@ import { useAuth, API_BASE } from '../context/AuthContext';
 
 export default function Login() {
   const { login } = useAuth();
-  const [email, setEmail] = useState('admin@safedrive.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -85,11 +85,6 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-8 pt-6 border-t border-slate-100 text-center">
-          <p className="text-xs text-slate-500">
-            Demo Credentials: <span className="text-indigo-600 font-mono font-bold">admin@safedrive.com / admin123</span>
-          </p>
-        </div>
       </div>
     </div>
   );

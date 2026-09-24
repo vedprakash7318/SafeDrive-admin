@@ -18,8 +18,17 @@ export default function GlobalSettings() {
     sosCooldownSeconds: 60,
     sosRateLimitHours: 12,
     sosRateLimitCount: 3,
+    sosRateLimitCount: 3,
     isCODEnabled: true,
-    partnerDashboardMessage: 'Welcome to your new Partner Portal. Manage your inventory, activate tags for your customers, and track your sales all in one place.'
+    partnerDashboardMessage: 'Welcome to your new Partner Portal. Manage your inventory, activate tags for your customers, and track your sales all in one place.',
+    shipprimePickupName: 'SafeDrive HQ',
+    shipprimePickupAddress1: 'SafeDrive Headquarters',
+    shipprimePickupCity: 'Delhi',
+    shipprimePickupState: 'Delhi',
+    shipprimePickupCountry: 'India',
+    shipprimePickupPincode: '110001',
+    shipprimePickupPhone: '9876543210',
+    shipprimeReturnName: 'SafeDrive HQ Return'
   });
   const [activeTab, setActiveTab] = useState(localStorage.getItem('globalSettingsTab') || 'push');
   const [loading, setLoading] = useState(false);
@@ -134,6 +143,14 @@ export default function GlobalSettings() {
             }`}
           >
             Payment Methods
+          </button>
+          <button
+            onClick={() => { setActiveTab('shipprime'); localStorage.setItem('globalSettingsTab', 'shipprime'); }}
+            className={`pb-3 font-semibold text-sm transition-colors whitespace-nowrap ${
+              activeTab === 'shipprime' ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            ShipPrime Setup
           </button>
         </div>
 
@@ -332,6 +349,100 @@ export default function GlobalSettings() {
                   <h3 className="text-sm font-semibold text-slate-800">Enable Cash On Delivery (COD)</h3>
                   <p className="text-xs text-slate-500 mt-0.5">If disabled, users will only see Razorpay options for online payment.</p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'shipprime' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Pickup Location Name</label>
+                <input
+                  type="text"
+                  name="shipprimePickupName"
+                  value={settings.shipprimePickupName || ''}
+                  onChange={handleChange}
+                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Pickup Phone</label>
+                <input
+                  type="text"
+                  name="shipprimePickupPhone"
+                  value={settings.shipprimePickupPhone || ''}
+                  onChange={handleChange}
+                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-sm font-semibold text-slate-700">Address Line 1</label>
+                <input
+                  type="text"
+                  name="shipprimePickupAddress1"
+                  value={settings.shipprimePickupAddress1 || ''}
+                  onChange={handleChange}
+                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">City</label>
+                <input
+                  type="text"
+                  name="shipprimePickupCity"
+                  value={settings.shipprimePickupCity || ''}
+                  onChange={handleChange}
+                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">State</label>
+                <input
+                  type="text"
+                  name="shipprimePickupState"
+                  value={settings.shipprimePickupState || ''}
+                  onChange={handleChange}
+                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Country</label>
+                <input
+                  type="text"
+                  name="shipprimePickupCountry"
+                  value={settings.shipprimePickupCountry || ''}
+                  onChange={handleChange}
+                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-slate-700">Pincode</label>
+                <input
+                  type="text"
+                  name="shipprimePickupPincode"
+                  value={settings.shipprimePickupPincode || ''}
+                  onChange={handleChange}
+                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm"
+                  required
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2 mt-4 pt-4 border-t">
+                <label className="text-sm font-semibold text-slate-700">Return Location Name</label>
+                <input
+                  type="text"
+                  name="shipprimeReturnName"
+                  value={settings.shipprimeReturnName || ''}
+                  onChange={handleChange}
+                  className="w-full border border-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-sm"
+                  required
+                />
+                <p className="text-xs text-slate-500">Name for reverse pickup delivery address (uses same address details as above).</p>
               </div>
             </div>
           )}
