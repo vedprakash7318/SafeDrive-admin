@@ -86,7 +86,7 @@ export default function Dashboard() {
                 </p>
               </div>
               <Link 
-                to="/admin/qr" 
+                to="/qr" 
                 className="bg-white hover:bg-orange-50 border border-orange-200 text-orange-700 text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-xs whitespace-nowrap"
               >
                 Manage Inventory
