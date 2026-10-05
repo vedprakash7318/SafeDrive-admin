@@ -3,8 +3,7 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import SafeDriveQRCode from '../components/SafeDriveQRCode';
 import DigitalCardModal from '../components/DigitalCardModal';
-import { toPng } from 'html-to-image';
-import { jsPDF } from 'jspdf';
+
 import {
   QrCode,
   Plus,
@@ -186,46 +185,41 @@ export default function QRManagement() {
   };
 
   const handleDownloadPDF = async () => {
+    if (!printItems || printItems.length === 0) {
+      toast.error('No items to print.');
+      return;
+    }
+    const groupName = printItems[0].batchId;
+
     setIsGeneratingPDF(true);
     try {
-      let printArea = document.getElementById('pdf-content-area');
-      let isPaginated = !!printArea;
+      const response = await axios.post(
+        `${API_BASE}/admin/qr/generate-pdf`,
+        { 
+          groupName: groupName,
+          paperSize: printPaperSize
+        },
+        {
+          headers: { ...authHeader.headers },
+          responseType: 'blob'
+        }
+      );
 
-      if (!printArea) {
-        printArea = document.getElementById('printable-area');
-      }
-
-      if (!printArea) return;
-
-      const pdf = new jsPDF({
-        orientation: (printPaperSize === 'A3_CARD_21' || printPaperSize === '13x19_SINGLE' || printPaperSize === '13x19_GRID_12' || printPaperSize === '13x19_GRID_18' || printPaperSize === 'A4_GRID_6' || printPaperSize === 'A3_GRID_8') ? 'portrait' : 'portrait',
-        unit: 'mm',
-        format: 'a3'
-      });
-
-      const pages = isPaginated ? printArea.querySelectorAll('.pdf-page-wrapper') : [printArea];
-
-      for (let i = 0; i < pages.length; i++) {
-        const page = pages[i];
-
-        const imgData = await toPng(page, {
-          pixelRatio: 8,
-          cacheBust: true,
-          skipFonts: false
-        });
-
-        if (i > 0) pdf.addPage();
-
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (page.offsetHeight * pdfWidth) / page.offsetWidth;
-
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-      }
-
-      pdf.save(`SafeDrive_Stickers_${Date.now()}.pdf`);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `SafeDrive_Stickers_${groupName}_${Date.now()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('PDF downloaded successfully!');
     } catch (err) {
-      console.error("Error generating PDF", err);
-      alert("Failed to generate PDF: " + (err.message || err));
+      console.error("Error downloading PDF", err);
+      toast.error("Failed to generate PDF from server.");
     } finally {
       setIsGeneratingPDF(false);
     }
@@ -1261,18 +1255,9 @@ export default function QRManagement() {
                   <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                     Paper Size & Layout Preset
                   </label>
-                  <select
-                    value={printPaperSize}
-                    onChange={(e) => setPrintPaperSize(e.target.value)}
-                    className="bg-slate-50 border-2 border-[#1D56A5] text-slate-900 font-bold text-xs rounded-xl px-3 py-2 focus:outline-none shadow-2xs"
-                  >
-                    <option value="A3_CARD_21">💳 Standard Card (9.2×5.49 cm) — A3 Sheet (21 Cards)</option>
-                    <option value="13x19_SINGLE">📐 13×19 Inch (330×483 mm) — 1 Large QR</option>
-                    <option value="13x19_GRID_12">📑 13×19 Inch (330×483 mm) — 12 Stickers (3×4)</option>
-                    <option value="13x19_GRID_18">📑 13×19 Inch (330×483 mm) — 18 Stickers (3×6)</option>
-                    <option value="A4_GRID_6">📄 A4 Sheet (210×297 mm) — 6 Stickers (2×3)</option>
-                    <option value="A3_GRID_8">📄 A3 Sheet (297×420 mm) — 8 Stickers (2×4)</option>
-                  </select>
+                  <div className="bg-slate-50 border-2 border-[#1D56A5] text-slate-900 font-bold text-xs rounded-xl px-3 py-2 shadow-2xs">
+                    💳 Standard Card (9.2×5.49 cm) — 13x19 inch Sheet (24 Cards)
+                  </div>
                 </div>
 
                 {/* 2. Filter Single QR (Optional) */}
@@ -1426,7 +1411,7 @@ export default function QRManagement() {
 
                 // 2. NEW CARD FORMAT (9.2cm x 5.49cm)
                 if (printPaperSize === 'A3_CARD_21') {
-                  const itemsPerPage = 21;
+                  const itemsPerPage = 24;
                   const totalPages = Math.ceil(displayItems.length / itemsPerPage);
 
                   return (
@@ -1434,22 +1419,18 @@ export default function QRManagement() {
                       {Array.from({ length: totalPages }).map((_, pageIndex) => {
                         const pageItems = displayItems.slice(pageIndex * itemsPerPage, (pageIndex + 1) * itemsPerPage);
                         return (
-                          <div key={pageIndex} className="pdf-page-wrapper print-page-break relative pt-8 print:pt-0">
-                            {/* Sheet indicator */}
-                            <div className="absolute top-0 left-0 right-0 text-center font-bold text-slate-500 text-sm print:hidden">
-                              Sheet {pageIndex + 1} of {totalPages} ({pageItems.length} Stickers)
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 place-items-center mt-6 print:mt-0" style={{ width: '100%', maxWidth: '29.7cm', margin: '0 auto', gap: '6px' }}>
+                          <div key={pageIndex} className="pdf-page-wrapper print-page-break relative">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 place-items-center mt-6 print:mt-0" style={{ width: '100%', maxWidth: '29.5cm', margin: '0 auto', gap: '0.5cm' }}>
                               {pageItems.map((qr) => {
                                 const typeInfo = qrTypes.find(t => t._id === qr.qrTypeId || t.name === (qr.qrFor || qr.qrType));
                                 const bgImage = typeInfo?.templateImage || '/card_bg.png';
                                 return (
-                                  <div key={qr._id} className="border border-dashed border-slate-400 print:border-slate-800 print-no-break" style={{ padding: '0' }}>
+                                  <div key={qr._id} className="border border-dashed border-slate-400 print:border-slate-800 print-no-break" style={{ padding: '0.1cm', width: '9.4cm', height: '5.69cm', boxSizing: 'border-box' }}>
                                     <div
                                       className="relative overflow-hidden shadow-sm print:shadow-none"
                                       style={{
-                                        width: '9.2cm',
-                                        height: '5.49cm',
+                                        width: '100%',
+                                        height: '100%',
                                         backgroundImage: `url('${bgImage}')`,
                                         backgroundSize: '100% 100%',
                                         backgroundRepeat: 'no-repeat',

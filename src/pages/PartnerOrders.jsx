@@ -35,6 +35,7 @@ export default function PartnerOrders() {
   const { authHeader, token } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [downloadingLabelId, setDownloadingLabelId] = useState(null);
 
   // Filters & Search
   const [search, setSearch] = useState('');
@@ -221,6 +222,28 @@ export default function PartnerOrders() {
       setActionError(err.response?.data?.message || 'Failed to update order');
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleDownloadShipPrimeLabel = async (orderId) => {
+    setDownloadingLabelId(orderId);
+    try {
+      const { token } = authHeader.headers;
+      const res = await axios.post(`${API_BASE}/admin/partner-orders/${orderId}/shipprime-label`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.data.success && res.data.labelUrl) {
+        window.open(res.data.labelUrl, '_blank');
+        toast.success("ShipPrime label fetched successfully!");
+        fetchOrders();
+      } else {
+        toast.error("Label URL not found");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error(err.response?.data?.message || "Failed to download ShipPrime label");
+    } finally {
+      setDownloadingLabelId(null);
     }
   };
 
@@ -963,7 +986,21 @@ export default function PartnerOrders() {
                 <p className="text-2xl font-black text-[#1D56A5]">{selectedOrder.orderStatus}</p>
                 
                 <div className="flex flex-wrap gap-2 mt-3">
-                  {selectedOrder.shippingLabelUrl && (
+                  {selectedOrder.shippingLabelUrl && selectedOrder.courierPartner !== 'Post Office' && (
+                    <button
+                      onClick={() => handleDownloadShipPrimeLabel(selectedOrder._id)}
+                      disabled={downloadingLabelId === selectedOrder._id}
+                      className="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white text-[10px] sm:text-xs font-bold px-4 py-2 rounded-xl shadow-sm transition disabled:opacity-50"
+                    >
+                      {downloadingLabelId === selectedOrder._id ? (
+                        <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      ) : (
+                        <span>🖨️</span>
+                      )}
+                      <span>{downloadingLabelId === selectedOrder._id ? 'Generating...' : 'Download Label'}</span>
+                    </button>
+                  )}
+                  {selectedOrder.shippingLabelUrl && selectedOrder.courierPartner === 'Post Office' && (
                     <a
                       href={selectedOrder.shippingLabelUrl}
                       target="_blank"
@@ -971,7 +1008,7 @@ export default function PartnerOrders() {
                       rel="noopener noreferrer"
                       className="inline-block bg-slate-900 hover:bg-slate-800 text-white text-[10px] sm:text-xs font-bold px-4 py-2 rounded-xl shadow-sm transition"
                     >
-                      🖨️ Download Label / Receipt
+                      🖨️ Download Receipt
                     </a>
                   )}
                   {(selectedOrder.orderStatus === 'PROCESSING' || selectedOrder.orderStatus === 'PENDING') && (
